@@ -1,0 +1,272 @@
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import {
+    ArrowUpDown, ArrowUp, ArrowDown,
+    Download, Columns3, ChevronDown, ChevronRight,
+} from 'lucide-react';
+
+export interface TableColumn<T> {
+    key: string;
+    header: string;
+    width?: string;
+    sticky?: boolean;
+    sortable?: boolean;
+    align?: 'left' | 'center' | 'right';
+    render?: (value: unknown, row: T, index: number) => React.ReactNode;
+    format?: 'number' | 'currency' | 'percent' | 'change';
+}
+
+interface EnterpriseTableProps<T> {
+    columns: TableColumn<T>[];
+    data: T[];
+    title?: string;
+    pageSize?: number;
+    expandable?: boolean;
+    renderExpandedRow?: (row: T) => React.ReactNode;
+    onExport?: (format: 'csv' | 'xlsx') => void;
+    className?: string;
+}
+
+type SortDir = 'asc' | 'desc' | null;
+
+export default function EnterpriseTable<T extends Record<string, unknown>>({
+    columns,
+    data,
+    title,
+    pageSize = 10,
+    expandable = false,
+    renderExpandedRow,
+    onExport,
+    className = '',
+}: EnterpriseTableProps<T>) {
+    const [sortKey, setSortKey] = useState<string | null>(null);
+    const [sortDir, setSortDir] = useState<SortDir>(null);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(columns.map((c) => c.key)));
+    const [showColumnToggle, setShowColumnToggle] = useState(false);
+
+    const sortedData = useMemo(() => {
+        if (!sortKey || !sortDir) return data;
+        return [...data].sort((a, b) => {
+            const aVal = a[sortKey];
+            const bVal = b[sortKey];
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+            return sortDir === 'asc'
+                ? String(aVal).localeCompare(String(bVal))
+                : String(bVal).localeCompare(String(aVal));
+        });
+    }, [data, sortKey, sortDir]);
+
+    const totalPages = Math.ceil(sortedData.length / pageSize);
+    const paginatedData = sortedData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+    const handleSort = (key: string) => {
+        if (sortKey === key) {
+            if (sortDir === 'asc') setSortDir('desc');
+            else if (sortDir === 'desc') { setSortKey(null); setSortDir(null); }
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
+    const toggleExpand = (idx: number) => {
+        const next = new Set(expandedRows);
+        if (next.has(idx)) next.delete(idx);
+        else next.add(idx);
+        setExpandedRows(next);
+    };
+
+    const toggleColumn = (key: string) => {
+        const next = new Set(visibleColumns);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        setVisibleColumns(next);
+    };
+
+    const formatValue = (value: unknown, format?: string) => {
+        if (value === null || value === undefined) return '—';
+        if (format === 'number') return Number(value).toLocaleString('en-US');
+        if (format === 'currency') return `${Number(value).toLocaleString('en-US')} د.أ`;
+        if (format === 'percent') return `${Number(value).toFixed(1)}%`;
+        if (format === 'change') {
+            const num = Number(value);
+            const color = num >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            return <span style={{ color }} dir="ltr">{num >= 0 ? '+' : ''}{num.toFixed(1)}%</span>;
+        }
+        return String(value);
+    };
+
+    const activeColumns = columns.filter((c) => visibleColumns.has(c.key));
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`glass-panel overflow-hidden ${className}`}
+        >
+            {/* شريط الأدوات */}
+            <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div>
+                    {title && <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</h3>}
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        {data.length.toLocaleString('en-US')} سجل
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {/* تبديل الأعمدة */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowColumnToggle(!showColumnToggle)}
+                            className="p-2 rounded-lg transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            <Columns3 size={14} />
+                        </button>
+                        {showColumnToggle && (
+                            <div
+                                className="absolute right-0 top-10 w-48 py-2 rounded-lg z-50"
+                                style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-elevated)' }}
+                            >
+                                {columns.map((col) => (
+                                    <button
+                                        key={col.key}
+                                        onClick={() => toggleColumn(col.key)}
+                                        className="flex items-center gap-2 w-full px-3 py-1.5 text-xs transition-colors"
+                                        style={{ color: visibleColumns.has(col.key) ? 'var(--text-primary)' : 'var(--text-muted)' }}
+                                    >
+                                        <div
+                                            className="w-3 h-3 rounded-sm border"
+                                            style={{
+                                                borderColor: visibleColumns.has(col.key) ? 'var(--accent-green)' : 'var(--border-default)',
+                                                background: visibleColumns.has(col.key) ? 'var(--accent-green-dim)' : 'transparent',
+                                            }}
+                                        />
+                                        {col.header}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* تصدير */}
+                    <button
+                        onClick={() => onExport?.('csv')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                        style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
+                    >
+                        <Download size={12} />
+                        تصدير
+                    </button>
+                </div>
+            </div>
+
+            {/* الجدول */}
+            <div className="overflow-x-auto">
+                <table className="enterprise-table">
+                    <thead>
+                        <tr>
+                            {expandable && <th style={{ width: '40px' }} />}
+                            {activeColumns.map((col) => (
+                                <th
+                                    key={col.key}
+                                    style={{ width: col.width, textAlign: col.align || 'right', cursor: col.sortable ? 'pointer' : 'default' }}
+                                    onClick={() => col.sortable && handleSort(col.key)}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        {col.header}
+                                        {col.sortable && (
+                                            sortKey === col.key ? (
+                                                sortDir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                                            ) : (
+                                                <ArrowUpDown size={12} className="opacity-30" />
+                                            )
+                                        )}
+                                    </div>
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {paginatedData.map((row, idx) => {
+                            const globalIdx = currentPage * pageSize + idx;
+                            const isExpanded = expandedRows.has(globalIdx);
+
+                            return (
+                                <React.Fragment key={globalIdx}>
+                                    <tr>
+                                        {expandable && (
+                                            <td>
+                                                <button
+                                                    onClick={() => toggleExpand(globalIdx)}
+                                                    className="p-1 rounded"
+                                                    style={{ color: 'var(--text-muted)' }}
+                                                >
+                                                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                </button>
+                                            </td>
+                                        )}
+                                        {activeColumns.map((col) => (
+                                            <td key={col.key} style={{ textAlign: col.align || 'right' }}>
+                                                {col.render
+                                                    ? col.render(row[col.key], row, globalIdx)
+                                                    : formatValue(row[col.key], col.format)}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    {isExpanded && renderExpandedRow && (
+                                        <tr>
+                                            <td colSpan={activeColumns.length + (expandable ? 1 : 0)} style={{ padding: 0, background: 'var(--bg-input)' }}>
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="p-4"
+                                                >
+                                                    {renderExpandedRow(row)}
+                                                </motion.div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* الصفحات */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        صفحة {currentPage + 1} من {totalPages}
+                    </p>
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                            const page = i;
+                            return (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className="w-8 h-8 rounded-md text-xs font-medium transition-colors"
+                                    style={{
+                                        background: currentPage === page ? 'var(--accent-green-dim)' : 'transparent',
+                                        color: currentPage === page ? 'var(--accent-green)' : 'var(--text-muted)',
+                                        border: `1px solid ${currentPage === page ? 'var(--accent-green)' : 'var(--border-subtle)'}`,
+                                    }}
+                                >
+                                    {page + 1}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </motion.div>
+    );
+}

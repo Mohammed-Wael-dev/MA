@@ -1,0 +1,457 @@
+'use client';
+
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Percent, DollarSign, TrendingUp, TrendingDown, Tag, BarChart3, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import ChartCard from '@/components/ui/ChartCard';
+
+// ── بيانات الفئات ──
+const categories = [
+    {
+        name: 'أجهزة والكترونيات', withMargin: 72.73, withSales: 0.09, noMargin: 57.21, noSales: 0.09, products: [
+            { name: 'شاشة سامسونج 32"', withMargin: 75.10, withSales: 0.04, noMargin: 58.20, noSales: 0.04 },
+            { name: 'مكيف سبليت 1.5طن', withMargin: 69.50, withSales: 0.03, noMargin: 55.80, noSales: 0.03 },
+            { name: 'طباعة ليزر HP', withMargin: 73.80, withSales: 0.02, noMargin: 57.60, noSales: 0.02 },
+        ]
+    },
+    {
+        name: 'العناية الشخصية', withMargin: 26.19, withSales: 1.06, noMargin: 22.11, noSales: 0.59, products: [
+            { name: 'شامبو هيد آند شولدرز', withMargin: 28.40, withSales: 0.35, noMargin: 23.10, noSales: 0.20 },
+            { name: 'كريم نيفيا للجسم', withMargin: 24.80, withSales: 0.42, noMargin: 21.30, noSales: 0.22 },
+            { name: 'معجون أسنان كولجيت', withMargin: 25.30, withSales: 0.29, noMargin: 21.90, noSales: 0.17 },
+        ]
+    },
+    {
+        name: 'غير مصنف', withMargin: 30.25, withSales: 0.25, noMargin: 13.11, noSales: 0.16, products: [
+            { name: 'منتج متنوع أ', withMargin: 32.10, withSales: 0.12, noMargin: 14.20, noSales: 0.08 },
+            { name: 'منتج متنوع ب', withMargin: 28.40, withSales: 0.13, noMargin: 12.00, noSales: 0.08 },
+        ]
+    },
+    {
+        name: 'فرفاشية', withMargin: 72.40, withSales: 1.42, noMargin: 44.64, noSales: 2.17, products: [
+            { name: 'مثلجات كيه دي دي', withMargin: 74.20, withSales: 0.55, noMargin: 45.80, noSales: 0.88 },
+            { name: 'حلوى شوكولاته مكس', withMargin: 70.80, withSales: 0.52, noMargin: 43.40, noSales: 0.82 },
+            { name: 'سناكس متنوعة', withMargin: 72.20, withSales: 0.35, noMargin: 44.70, noSales: 0.47 },
+        ]
+    },
+    {
+        name: 'مستلزمات الأطفال', withMargin: 22.63, withSales: 0.05, noMargin: 13.52, noSales: 0.17, products: [
+            { name: 'حفاضات بامبرز', withMargin: 23.80, withSales: 0.02, noMargin: 14.10, noSales: 0.07 },
+            { name: 'مناشف رطبة للأطفال', withMargin: 21.40, withSales: 0.03, noMargin: 12.90, noSales: 0.10 },
+        ]
+    },
+    {
+        name: 'مستلزمات منزلية', withMargin: 38.03, withSales: 0.52, noMargin: 24.17, noSales: 0.08, products: [
+            { name: 'منظف أريال مسحوق', withMargin: 39.20, withSales: 0.20, noMargin: 25.40, noSales: 0.03 },
+            { name: 'صابون صحون فيري', withMargin: 37.50, withSales: 0.18, noMargin: 23.80, noSales: 0.03 },
+            { name: 'ليف مطبخ', withMargin: 37.40, withSales: 0.14, noMargin: 23.30, noSales: 0.02 },
+        ]
+    },
+    {
+        name: 'منتجات ورقية', withMargin: 44.55, withSales: 0.40, noMargin: 41.39, noSales: 0.39, products: [
+            { name: 'مناديل كلينكس', withMargin: 46.20, withSales: 0.18, noMargin: 43.10, noSales: 0.18 },
+            { name: 'ورق طباعة A4', withMargin: 42.80, withSales: 0.14, noMargin: 39.60, noSales: 0.13 },
+            { name: 'أكياس قمامة', withMargin: 44.60, withSales: 0.08, noMargin: 41.50, noSales: 0.08 },
+        ]
+    },
+    {
+        name: 'مسطحات', withMargin: 33.22, withSales: 0.08, noMargin: 47.55, noSales: 0.23, products: [
+            { name: 'عصير برتقال طبيعي', withMargin: 34.10, withSales: 0.04, noMargin: 48.20, noSales: 0.12 },
+            { name: 'مياه معدنية 1.5L', withMargin: 32.30, withSales: 0.04, noMargin: 46.90, noSales: 0.11 },
+        ]
+    },
+    {
+        name: 'غير مصنف 2', withMargin: 38.41, withSales: 0.88, noMargin: 21.40, noSales: 0.21, products: [
+            { name: 'منتج متنوع أ', withMargin: 39.50, withSales: 0.45, noMargin: 22.30, noSales: 0.11 },
+            { name: 'منتج متنوع ب', withMargin: 37.30, withSales: 0.43, noMargin: 20.50, noSales: 0.10 },
+        ]
+    },
+    {
+        name: 'منتجات غذائية', withMargin: 27.75, withSales: 7.69, noMargin: 21.40, noSales: 0.21, products: [
+            { name: 'أرز عنبر 5كجم', withMargin: 29.40, withSales: 2.10, noMargin: 22.80, noSales: 0.06 },
+            { name: 'زيت نباتي 1.8L', withMargin: 26.80, withSales: 1.95, noMargin: 20.60, noSales: 0.05 },
+            { name: 'سكر أبيض 2كجم', withMargin: 27.10, withSales: 1.80, noMargin: 21.10, noSales: 0.04 },
+            { name: 'شاي ليبتون 100كيس', withMargin: 28.20, withSales: 1.84, noMargin: 21.10, noSales: 0.06 },
+        ]
+    },
+    {
+        name: 'مستلزمات الأعمال', withMargin: 38.51, withSales: 0.15, noMargin: 21.40, noSales: 0.21, products: [
+            { name: 'ورق طباعة مكتبي', withMargin: 40.20, withSales: 0.08, noMargin: 22.50, noSales: 0.11 },
+            { name: 'أقلام حبر جاف', withMargin: 36.80, withSales: 0.07, noMargin: 20.30, noSales: 0.10 },
+        ]
+    },
+    {
+        name: 'مسطحات غذائية', withMargin: 38.43, withSales: 3.24, noMargin: 21.40, noSales: 0.21, products: [
+            { name: 'عصير مانجو 1L', withMargin: 39.10, withSales: 1.20, noMargin: 22.10, noSales: 0.08 },
+            { name: 'مشروب ليمون 500مل', withMargin: 37.80, withSales: 1.04, noMargin: 20.80, noSales: 0.07 },
+            { name: 'ماء كوكاكولا 600مل', withMargin: 38.40, withSales: 1.00, noMargin: 21.30, noSales: 0.06 },
+        ]
+    },
+];
+
+const discountRanges = [
+    { range: '0%', netSales: 352410, profitValue: 155520, totalDiscount: 0, avgRate: 0.00 },
+    { range: '1-2%', netSales: 4830, profitValue: 1240, totalDiscount: 2146.83, avgRate: 1.01 },
+    { range: '2-5%', netSales: 12147, profitValue: 3210, totalDiscount: 41022.07, avgRate: 3.06 },
+    { range: '5-10%', netSales: 38321, profitValue: 9870, totalDiscount: 43122.97, avgRate: 6.15 },
+    { range: '11-25%', netSales: 80000, profitValue: 22100, totalDiscount: 82855.13, avgRate: 14.68 },
+];
+
+const branches = [
+    { name: 'عمّان', invoices: 79.00, discInv: 38, discRate: 68.00, noDiscInv: 40, avgDisc: 0, discSales: 0, discVol: 43, netSales: 0, appDisc: 0.30, utilRate: 0.00, avgDiscRate: 0.00 },
+    { name: 'العيادات واللجان', invoices: 1.00, discInv: 0, discRate: 42.00, noDiscInv: 1, avgDisc: 0, discSales: 0, discVol: 0, netSales: 0, appDisc: 0, utilRate: 0.00, avgDiscRate: 0.00 },
+    { name: 'بالوانات مبيعات (الأردن)', invoices: 4.00, discInv: 0, discRate: 92.00, noDiscInv: 4, avgDisc: 0, discSales: 0, discVol: 1, netSales: 0, appDisc: 0, utilRate: 0.00, avgDiscRate: 0.00 },
+    { name: 'الكرك', invoices: 1.00, discInv: 1, discRate: 90.00, noDiscInv: 0, avgDisc: 1.90, discSales: 1, discVol: 1, netSales: 1, appDisc: 1.90, utilRate: 4.00, avgDiscRate: 4.40 },
+    { name: 'المفرق', invoices: 1.00, discInv: 1, discRate: 80.00, noDiscInv: 0, avgDisc: 1.30, discSales: 0, discVol: 1, netSales: 0, appDisc: 1.30, utilRate: 3.00, avgDiscRate: 3.00 },
+    { name: 'اربد', invoices: 4.00, discInv: 1, discRate: 60.00, noDiscInv: 3, avgDisc: 0.50, discSales: 0, discVol: 1, netSales: 0, appDisc: 0.50, utilRate: 4.00, avgDiscRate: 0.46 },
+    { name: 'الزرقاء', invoices: 9.00, discInv: 2, discRate: 50.00, noDiscInv: 7, avgDisc: 0.80, discSales: 1, discVol: 2, netSales: 1, appDisc: 0.80, utilRate: 0.00, avgDiscRate: 0.00 },
+    { name: 'الإجمالي', invoices: 79.00, discInv: 38, discRate: 68.00, noDiscInv: 40, avgDisc: 0.94, discSales: 2, discVol: 43, netSales: 2, appDisc: 4.80, utilRate: 4.00, avgDiscRate: 4.45 },
+];
+
+const fmt2 = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+const fmtK = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(2)}K` : fmt2(n);
+
+export default function DiscountsPage() {
+    const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+    const [discountPeriod, setDiscountPeriod] = useState<'شهري' | 'ربعي' | 'سنوي'>('شهري');
+
+    const toggleCat = (name: string) => {
+        setExpandedCats(prev => {
+            const next = new Set(prev);
+            next.has(name) ? next.delete(name) : next.add(name);
+            return next;
+        });
+    };
+
+    // ── هامش الربح حسب الفئة ونطاق الخصم ──
+    const profitMarginByCatOption = {
+        tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const }, backgroundColor: '#1a2035', borderColor: '#1e293b', textStyle: { color: '#e2e8f0', fontSize: 10 } },
+        legend: { data: ['0%', '1-2%', '2-5%', '5-10%', '11-25%'], top: 0, right: 0, textStyle: { color: '#64748b', fontSize: 8 } },
+        grid: { left: '20%', right: '6%', top: '14%', bottom: '4%' },
+        xAxis: { type: 'value' as const, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#64748b' }, splitLine: { lineStyle: { color: '#1e293b' } }, max: 100 },
+        yAxis: { type: 'category' as const, data: categories.map(c => c.name), axisLabel: { fontSize: 9, color: '#94a3b8' }, axisLine: { show: false }, axisTick: { show: false } },
+        series: [
+            { name: '0%', type: 'bar' as const, stack: 'total', barMaxWidth: 18, data: categories.map((_, i) => [31.92, 11.27, 45.89, 40.10, 31.11, 22.15, 66.71, 40.15, 29.90, 21.99, 21.00, 21.00][i]), itemStyle: { color: '#00e5a0' }, label: { show: true, fontSize: 7, color: '#fff', formatter: (p: { value: number }) => p.value > 5 ? `${p.value}%` : '' } },
+            { name: '1-2%', type: 'bar' as const, stack: 'total', barMaxWidth: 18, data: categories.map((_, i) => [0, 21.67, 0, 0, 0, 41.36, 0, 0, 0, 0, 0, 0][i]), itemStyle: { color: '#00d4ff' } },
+            { name: '2-5%', type: 'bar' as const, stack: 'total', barMaxWidth: 18, data: categories.map((_, i) => [0, 0, 0, 24.97, 0, 0, 0, 0, 0, 0, 0, 0][i]), itemStyle: { color: '#3b82f6' } },
+            { name: '5-10%', type: 'bar' as const, stack: 'total', barMaxWidth: 18, data: categories.map((_, i) => [0, 4.67, 0, 14.93, 0, 0, 0, 0, 0, 0, 0, 0][i]), itemStyle: { color: '#f59e0b' } },
+            { name: '11-25%', type: 'bar' as const, stack: 'total', barMaxWidth: 18, data: categories.map((_, i) => [0, 0, 0, 0, 0, 0, 0, 0, 21.40, 0, 0, 21.40][i]), itemStyle: { color: '#ef4444' } },
+        ],
+    };
+
+    // ── Scatter: نسب الخصم × حجم المبيعات ──
+    const scatterOption = {
+        tooltip: {
+            trigger: 'item' as const, backgroundColor: '#1a2035', borderColor: '#1e293b', textStyle: { color: '#e2e8f0', fontSize: 10 },
+            formatter: (p: { data: [number, number, string] }) => `<b style="color:#00e5a0">${p.data[2]}</b><br/>نسبة الخصم: ${p.data[0]}%<br/>حجم المبيعات: ${p.data[1]}K`,
+        },
+        xAxis: { type: 'value' as const, name: 'نسبة الخصم %', nameTextStyle: { color: '#64748b', fontSize: 9 }, axisLabel: { formatter: '{value}%', fontSize: 9, color: '#64748b' }, splitLine: { lineStyle: { color: '#1e293b' } } },
+        yAxis: { type: 'value' as const, name: 'حجم مبيعات المنتجات', nameTextStyle: { color: '#64748b', fontSize: 9 }, axisLabel: { formatter: (v: number) => `${(v / 1000).toFixed(0)}K`, fontSize: 9, color: '#64748b' }, splitLine: { lineStyle: { color: '#1e293b' } } },
+        series: [{
+            type: 'scatter',
+            symbolSize: (d: number[]) => Math.max(10, Math.sqrt(d[1] / 100)),
+            data: categories.map(c => [c.withSales * 5, c.withMargin * 1000, c.name]),
+            itemStyle: { color: '#00e5a0', opacity: 0.8, borderColor: 'rgba(0,229,160,0.25)', borderWidth: 1 },
+            label: { show: true, formatter: (p: { data: (number | string)[] }) => String(p.data[2]).split(/[ ،]/)[0], fontSize: 9, color: '#94a3b8', position: 'top' as const },
+        }],
+        grid: { bottom: '12%', top: '14%', left: '12%', right: '5%' },
+    };
+
+    // ── صافي المبيعات حسب نطاق الخصم ──
+    const rangeBarOption = {
+        tooltip: { trigger: 'axis' as const, backgroundColor: '#1a2035', borderColor: '#1e293b', textStyle: { color: '#e2e8f0', fontSize: 10 } },
+        legend: { data: ['صافي المبيعات', 'قيمة الربح', 'إجمالي الخصومات'], bottom: 0, textStyle: { color: '#64748b', fontSize: 9 } },
+        grid: { bottom: '18%', top: '10%', left: '3%', right: '3%', containLabel: true },
+        xAxis: { type: 'category' as const, data: discountRanges.map(r => r.range), axisLabel: { fontSize: 10, color: '#64748b' }, axisLine: { lineStyle: { color: '#334155' } } },
+        yAxis: [
+            { type: 'value' as const, axisLabel: { formatter: (v: number) => fmtK(v), fontSize: 9, color: '#64748b' }, splitLine: { lineStyle: { color: '#1e293b' } } },
+            { type: 'value' as const, name: 'معدل الخصم %', axisLabel: { formatter: '{value}%', fontSize: 9, color: '#64748b' } },
+        ],
+        series: [
+            { name: 'صافي المبيعات', type: 'bar', data: discountRanges.map(r => ({ value: r.netSales, itemStyle: { color: '#00e5a0', borderRadius: [4, 4, 0, 0] } })), barMaxWidth: 32 },
+            { name: 'قيمة الربح', type: 'bar', data: discountRanges.map(r => ({ value: r.profitValue, itemStyle: { color: '#00d4ff', borderRadius: [4, 4, 0, 0] } })), barMaxWidth: 32 },
+            { name: 'إجمالي الخصومات', type: 'bar', data: discountRanges.map(r => ({ value: r.totalDiscount, itemStyle: { color: '#f59e0b', borderRadius: [4, 4, 0, 0] } })), barMaxWidth: 32 },
+            { name: 'معدل الخصم %', type: 'line', yAxisIndex: 1, data: discountRanges.map(r => r.avgRate), lineStyle: { color: '#ef4444', width: 2 }, itemStyle: { color: '#ef4444' }, smooth: true },
+        ],
+    };
+
+    // ── إجمالي الخصومات بمرور الوقت ──
+    const periodData = {
+        'شهري': {
+            labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+            values: [153000, 118500, 353000, 185000, 206000, 139500, 112000, 404000, 225000, 178000, 478000, 571000],
+        },
+        'ربعي': {
+            labels: ['الربع الأول', 'الربع الثاني', 'الربع الثالث', 'الربع الرابع'],
+            values: [624500, 530500, 741000, 1227000],
+        },
+        'سنوي': {
+            labels: ['2021', '2022', '2023', '2024'],
+            values: [1850000, 2340000, 2780000, 3123000],
+        },
+    };
+    const pData = periodData[discountPeriod];
+    const discountTrendOption = {
+        tooltip: {
+            trigger: 'axis' as const,
+            backgroundColor: '#1a2035', borderColor: '#1e293b',
+            textStyle: { color: '#e2e8f0', fontSize: 11 },
+            formatter: (params: { name: string; value: number }[]) =>
+                `${params[0].name}<br/>إجمالي الخصومات: <b style="color:#f59e0b">${fmtK(params[0].value)}</b>`,
+        },
+        grid: { bottom: '10%', top: '8%', left: '3%', right: '3%', containLabel: true },
+        xAxis: {
+            type: 'category' as const,
+            data: pData.labels,
+            axisLabel: { fontSize: 9, color: '#64748b' },
+            axisLine: { lineStyle: { color: '#334155' } },
+            splitLine: { show: false },
+        },
+        yAxis: {
+            type: 'value' as const,
+            axisLabel: { formatter: (v: number) => fmtK(v), fontSize: 9, color: '#64748b' },
+            splitLine: { lineStyle: { color: '#1e293b' } },
+        },
+        series: [{
+            type: 'line' as const,
+            smooth: true,
+            showSymbol: true,
+            symbolSize: 7,
+            data: pData.values,
+            lineStyle: { color: '#f59e0b', width: 2.5 },
+            itemStyle: { color: '#f59e0b', borderColor: '#1a2035', borderWidth: 2 },
+            areaStyle: {
+                color: {
+                    type: 'linear' as const, x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [
+                        { offset: 0, color: 'rgba(245,158,11,0.25)' },
+                        { offset: 1, color: 'rgba(245,158,11,0.02)' },
+                    ],
+                },
+            },
+        }],
+    };
+
+    const kpis = [
+        { icon: DollarSign, label: 'صافي المبيعات', value: '425.92K', color: '#00e5a0', dim: 'rgba(0,229,160,0.1)' },
+        { icon: TrendingUp, label: 'قيمة الربح', value: '155.52K', color: '#00d4ff', dim: 'rgba(0,212,255,0.1)' },
+        { icon: BarChart3, label: 'قيمة التكلفة', value: '78.28K', color: '#3b82f6', dim: 'rgba(59,130,246,0.1)' },
+        { icon: Tag, label: 'إجمالي الخصومات المطبقة', value: '169.47K', color: '#f59e0b', dim: 'rgba(245,158,11,0.1)' },
+        { icon: TrendingDown, label: 'ربح المنتجات المخصومة', value: '43.61K', color: '#a855f7', dim: 'rgba(168,85,247,0.1)' },
+        { icon: Percent, label: '% مبيعات مخصومة', value: '21.31%', color: '#ef4444', dim: 'rgba(239,68,68,0.1)' },
+        { icon: AlertCircle, label: 'متوسط نسبة الخصم', value: '1.97%', color: '#0891b2', dim: 'rgba(8,145,178,0.1)' },
+    ];
+
+    return (
+        <div className="space-y-6">
+            {/* ── Header ── */}
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="flex items-center gap-3 mb-1">
+                    <Percent size={22} style={{ color: 'var(--accent-amber)' }} />
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Discount Analysis Dashboard</h1>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--accent-amber)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--accent-amber)' }}>التقرير السابع</span>
+                    </div>
+                </div>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>تحليل الخصومات: الهوامش، نطاقات الخصم، أداء الفروع، والمواسم</p>
+            </motion.div>
+
+            {/* ── KPIs ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
+                {kpis.map((k, i) => (
+                    <motion.div key={k.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                        className="glass-panel p-4 relative overflow-hidden">
+                        <div className="absolute -top-4 -right-4 w-14 h-14 rounded-full blur-2xl" style={{ background: k.color, opacity: 0.15 }} />
+                        <div className="relative">
+                            <div className="p-1.5 rounded-lg w-fit mb-2" style={{ background: k.dim }}>
+                                <k.icon size={11} style={{ color: k.color }} />
+                            </div>
+                            <p className="text-[15px] font-bold" style={{ color: k.color }} dir="ltr">{k.value}</p>
+                            <p className="text-[9px] font-semibold mt-0.5" style={{ color: 'var(--text-muted)' }}>{k.label}</p>
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+
+            {/* ── هامش الربح + Scatter ── */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <ChartCard title="% هامش الربح حسب الفئة ونطاق الخصم" subtitle="% Profit Margin by Category and Discount Range" option={profitMarginByCatOption} height="360px" delay={1} />
+                <ChartCard title="نسب الخصم وحجم مبيعات المنتجات" subtitle="Discount Percentages & Product Sales Volume by Category" option={scatterOption} height="360px" delay={2} />
+            </div>
+
+            {/* ── صافي المبيعات حسب نطاق الخصم ── */}
+            <ChartCard title="صافي المبيعات وقيمة الربح والخصومات حسب نطاق الخصم" subtitle="Net Sales, Profit Value, Total Applied Discounts & Average Discount Rate by Discount Range" option={rangeBarOption} height="320px" delay={1} />
+
+            {/* ── جدول مقارنة الفئات ── */}
+            <div className="glass-panel overflow-hidden">
+                <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>مقارنة أداء فئات الخصم</h3>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>Discount Category Comparison — مع/بدون خصومات</p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
+                                <th style={{ padding: '9px 12px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', minWidth: 150 }}>فئة الخصم</th>
+                                <th colSpan={2} style={{ padding: '9px 12px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--accent-green)', borderLeft: '1px solid var(--border-subtle)' }}>مع خصومات</th>
+                                <th colSpan={2} style={{ padding: '9px 12px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', borderLeft: '1px solid var(--border-subtle)' }}>بدون خصومات</th>
+                            </tr>
+                            <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
+                                <th style={{ padding: '7px 12px', textAlign: 'right', fontSize: 9, color: 'var(--text-muted)' }}></th>
+                                <th style={{ padding: '7px 12px', textAlign: 'center', fontSize: 9, color: 'var(--accent-green)', borderLeft: '1px solid var(--border-subtle)' }}>% هامش الربح</th>
+                                <th style={{ padding: '7px 12px', textAlign: 'center', fontSize: 9, color: 'var(--accent-green)' }}>% مساهمة المبيعات</th>
+                                <th style={{ padding: '7px 12px', textAlign: 'center', fontSize: 9, color: 'var(--text-muted)', borderLeft: '1px solid var(--border-subtle)' }}>% هامش الربح</th>
+                                <th style={{ padding: '7px 12px', textAlign: 'center', fontSize: 9, color: 'var(--text-muted)' }}>% مساهمة المبيعات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {categories.map((c) => {
+                                const isOpen = expandedCats.has(c.name);
+                                return (
+                                    <React.Fragment key={c.name}>
+                                        {/* صف الفئة */}
+                                        <tr
+                                            onClick={() => toggleCat(c.name)}
+                                            className="transition-colors cursor-pointer"
+                                            style={{ borderBottom: '1px solid var(--border-subtle)', background: isOpen ? 'rgba(0,229,160,0.04)' : 'transparent' }}
+                                        >
+                                            <td style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>
+                                                <div className="flex items-center gap-2">
+                                                    <span style={{ color: 'var(--accent-green)', transition: 'transform 0.2s', display: 'inline-block', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+                                                        <ChevronDown size={13} />
+                                                    </span>
+                                                    {c.name}
+                                                    <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>{c.products.length}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '8px 12px', textAlign: 'center', borderLeft: '1px solid var(--border-subtle)' }}>
+                                                <span style={{ fontSize: 10, fontWeight: 700, color: c.withMargin > 50 ? 'var(--accent-green)' : c.withMargin > 30 ? 'var(--accent-amber)' : 'var(--accent-red)' }} dir="ltr">{fmt2(c.withMargin)}%</span>
+                                            </td>
+                                            <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                                <span style={{ fontSize: 10, color: 'var(--text-secondary)' }} dir="ltr">{fmt2(c.withSales)}%</span>
+                                            </td>
+                                            <td style={{ padding: '8px 12px', textAlign: 'center', borderLeft: '1px solid var(--border-subtle)' }}>
+                                                <span style={{ fontSize: 10, fontWeight: 700, color: c.noMargin > 50 ? 'var(--accent-green)' : c.noMargin > 30 ? 'var(--accent-amber)' : 'var(--text-muted)' }} dir="ltr">{fmt2(c.noMargin)}%</span>
+                                            </td>
+                                            <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                                <span style={{ fontSize: 10, color: 'var(--text-muted)' }} dir="ltr">{fmt2(c.noSales)}%</span>
+                                            </td>
+                                        </tr>
+
+                                        {/* صفوف المنتجات */}
+                                        <AnimatePresence initial={false}>
+                                            {isOpen && c.products.map((p, pi) => (
+                                                <motion.tr
+                                                    key={p.name}
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    transition={{ duration: 0.18, delay: pi * 0.03 }}
+                                                    style={{ borderBottom: '1px solid var(--border-subtle)', background: 'rgba(0,229,160,0.02)' }}
+                                                >
+                                                    <td style={{ padding: '6px 12px 6px 30px', fontSize: 10, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <ChevronRight size={10} style={{ color: 'var(--accent-green)', opacity: 0.5 }} />
+                                                            {p.name}
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '6px 12px', textAlign: 'center', borderLeft: '1px solid var(--border-subtle)' }}>
+                                                        <span style={{ fontSize: 9.5, fontWeight: 600, color: p.withMargin > 50 ? 'var(--accent-green)' : p.withMargin > 30 ? 'var(--accent-amber)' : 'var(--accent-red)' }} dir="ltr">{fmt2(p.withMargin)}%</span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 12px', textAlign: 'center' }}>
+                                                        <span style={{ fontSize: 9.5, color: 'var(--text-muted)' }} dir="ltr">{fmt2(p.withSales)}%</span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 12px', textAlign: 'center', borderLeft: '1px solid var(--border-subtle)' }}>
+                                                        <span style={{ fontSize: 9.5, fontWeight: 600, color: p.noMargin > 50 ? 'var(--accent-green)' : p.noMargin > 30 ? 'var(--accent-amber)' : 'var(--text-muted)' }} dir="ltr">{fmt2(p.noMargin)}%</span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 12px', textAlign: 'center' }}>
+                                                        <span style={{ fontSize: 9.5, color: 'var(--text-muted)' }} dir="ltr">{fmt2(p.noSales)}%</span>
+                                                    </td>
+                                                </motion.tr>
+                                            ))}
+                                        </AnimatePresence>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* ── إجمالي الخصومات بمرور الوقت ── */}
+            <div className="glass-panel overflow-hidden">
+                <div className="px-5 py-3 border-b flex items-center justify-between flex-wrap gap-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <div>
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>إجمالي الخصومات بمرور الوقت</h3>
+                        <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>Total Discounts Over Time</p>
+                    </div>
+                    <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: 'var(--bg-elevated)' }}>
+                        {(['شهري', 'ربعي', 'سنوي'] as const).map(p => (
+                            <button key={p} onClick={() => setDiscountPeriod(p)}
+                                className="px-3 py-1.5 rounded-md text-[10px] font-semibold transition-all"
+                                style={{
+                                    background: discountPeriod === p ? 'rgba(245,158,11,0.15)' : 'transparent',
+                                    color: discountPeriod === p ? '#f59e0b' : 'var(--text-muted)',
+                                    border: discountPeriod === p ? '1px solid rgba(245,158,11,0.3)' : '1px solid transparent',
+                                }}>{p}</button>
+                        ))}
+                    </div>
+                </div>
+                <ChartCard title="" option={discountTrendOption} height="260px" />
+            </div>
+
+            {/* ── جدول أداء الفروع ── */}
+            <div className="glass-panel overflow-hidden">
+                <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>تفاصيل أداء الخصومات حسب الفرع</h3>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>Branch Discount Performance Details</p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
+                                {['الفرع', 'الفواتير', 'ف. مخصومة', '% الفواتير المخصومة', 'ف. بدون خصم', 'متوسط الخصم', 'مبيعات مخصومة', 'حجم مخصوم', 'صافي المبيعات', 'الخصومات المطبقة', '% الاستخدام', 'متوسط % الخصم'].map((h, i) => (
+                                    <th key={i} style={{ padding: '8px 10px', textAlign: i === 0 ? 'right' : 'center', fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {branches.map((b, i) => {
+                                const isTotal = b.name === 'الإجمالي';
+                                return (
+                                    <tr key={b.name} style={{ borderBottom: '1px solid var(--border-subtle)', background: isTotal ? 'var(--accent-green-dim)' : 'transparent', fontWeight: isTotal ? 700 : 400 }}
+                                        className={isTotal ? '' : 'hover:bg-white/[0.015] transition-colors'}>
+                                        <td style={{ padding: '7px 10px', fontSize: 11, color: isTotal ? 'var(--accent-green)' : 'var(--text-primary)', whiteSpace: 'nowrap' }}>{b.name}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--text-secondary)' }} dir="ltr">{b.invoices.toFixed(2)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--accent-cyan)' }} dir="ltr">{b.discInv}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                                            <div className="flex items-center gap-1.5 justify-center">
+                                                <div style={{ width: 36, height: 5, borderRadius: 3, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${(b.discRate / 100) * 100}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: 3 }} />
+                                                </div>
+                                                <span style={{ fontSize: 9, color: 'var(--accent-blue)' }} dir="ltr">{b.discRate.toFixed(2)}%</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--text-secondary)' }} dir="ltr">{b.noDiscInv}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--text-secondary)' }} dir="ltr">{b.avgDisc.toFixed(2)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--text-secondary)' }} dir="ltr">{b.discSales.toFixed(2)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--text-secondary)' }} dir="ltr">{b.discVol}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--accent-green)' }} dir="ltr">{b.netSales.toFixed(2)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: 10, color: 'var(--accent-amber)' }} dir="ltr">{b.appDisc.toFixed(2)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                                            <span style={{ display: 'inline-block', padding: '2px 7px', borderRadius: 20, fontSize: 9, fontWeight: 700, background: b.utilRate > 0 ? 'rgba(0,229,160,0.1)' : 'var(--bg-elevated)', color: b.utilRate > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }} dir="ltr">{b.utilRate.toFixed(2)}%</span>
+                                        </td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                                            <span style={{ display: 'inline-block', padding: '2px 7px', borderRadius: 20, fontSize: 9, fontWeight: 700, background: b.avgDiscRate > 0 ? 'rgba(245,158,11,0.1)' : 'var(--bg-elevated)', color: b.avgDiscRate > 0 ? 'var(--accent-amber)' : 'var(--text-muted)' }} dir="ltr">{b.avgDiscRate.toFixed(2)}%</span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
