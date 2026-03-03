@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, MapPin, Award, Scale, TrendingUp, BarChart3 } from 'lucide-react';
+import { Building2, MapPin, Award, Scale, TrendingUp, BarChart3, ChevronDown, ChevronLeft } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
 import EnterpriseTable from '@/components/ui/EnterpriseTable';
 import type { TableColumn } from '@/components/ui/EnterpriseTable';
@@ -24,15 +24,70 @@ const branchScores = [
 
 // ── أداء فئات المنتجات لكل فرع ──
 const categoryScores = [
-    { cat: 'أجهزة وإلكترونيات', b1: 60, b2: 20, b3: 85, b4: 55, b5: 90, b6: 40, b7: 78, b8: 25 },
-    { cat: 'العناية الشخصية', b1: 78, b2: 41, b3: 72, b4: 60, b5: 88, b6: 50, b7: 82, b8: 38 },
-    { cat: 'غير مصنف', b1: 91, b2: 28, b3: 65, b4: 35, b5: 76, b6: 45, b7: 70, b8: 22 },
-    { cat: 'فرفاشية', b1: 30, b2: 20, b3: 45, b4: 28, b5: 55, b6: 22, b7: 48, b8: 18 },
-    { cat: 'مستلزمات الأطفال', b1: 79, b2: 42, b3: 80, b4: 58, b5: 85, b6: 48, b7: 75, b8: 35 },
-    { cat: 'مستلزمات منزلية', b1: 78, b2: 43, b3: 74, b4: 62, b5: 89, b6: 52, b7: 80, b8: 40 },
-    { cat: 'منتجات غذائية', b1: 78, b2: 42, b3: 82, b4: 65, b5: 92, b6: 55, b7: 84, b8: 38 },
-    { cat: 'منتجات ورقية', b1: 78, b2: 42, b3: 70, b4: 50, b5: 83, b6: 45, b7: 72, b8: 30 },
-    { cat: 'مسطحات', b1: 78, b2: 42, b3: 75, b4: 55, b5: 86, b6: 48, b7: 76, b8: 32 },
+    {
+        cat: 'أجهزة وإلكترونيات', b1: 60, b2: 20, b3: 85, b4: 55, b5: 90, b6: 40, b7: 78, b8: 25, subs: [
+            { name: 'بطاريات', b1: 65, b2: 22, b3: 80, b4: 50, b5: 88, b6: 38, b7: 75, b8: 20 },
+            { name: 'إضاءة LED', b1: 58, b2: 18, b3: 88, b4: 58, b5: 92, b6: 42, b7: 80, b8: 28 },
+            { name: 'شواحن', b1: 55, b2: 20, b3: 82, b4: 52, b5: 85, b6: 35, b7: 72, b8: 22 },
+        ]
+    },
+    {
+        cat: 'العناية الشخصية', b1: 78, b2: 41, b3: 72, b4: 60, b5: 88, b6: 50, b7: 82, b8: 38, subs: [
+            { name: 'شامبو وبلسم', b1: 80, b2: 45, b3: 70, b4: 62, b5: 90, b6: 52, b7: 85, b8: 40 },
+            { name: 'معجون أسنان', b1: 75, b2: 38, b3: 75, b4: 58, b5: 86, b6: 48, b7: 78, b8: 35 },
+            { name: 'مزيل عرق', b1: 82, b2: 42, b3: 68, b4: 55, b5: 85, b6: 45, b7: 80, b8: 36 },
+            { name: 'عطور', b1: 72, b2: 35, b3: 78, b4: 65, b5: 92, b6: 55, b7: 88, b8: 42 },
+        ]
+    },
+    {
+        cat: 'غير مصنف', b1: 91, b2: 28, b3: 65, b4: 35, b5: 76, b6: 45, b7: 70, b8: 22, subs: [
+            { name: 'متفرقات', b1: 90, b2: 25, b3: 60, b4: 30, b5: 72, b6: 40, b7: 65, b8: 18 },
+            { name: 'عام', b1: 92, b2: 30, b3: 68, b4: 38, b5: 78, b6: 48, b7: 74, b8: 25 },
+        ]
+    },
+    {
+        cat: 'فرفاشية', b1: 30, b2: 20, b3: 45, b4: 28, b5: 55, b6: 22, b7: 48, b8: 18, subs: [
+            { name: 'مفارش', b1: 32, b2: 22, b3: 48, b4: 30, b5: 58, b6: 25, b7: 50, b8: 20 },
+            { name: 'وسائد', b1: 28, b2: 18, b3: 42, b4: 25, b5: 52, b6: 20, b7: 45, b8: 15 },
+        ]
+    },
+    {
+        cat: 'مستلزمات الأطفال', b1: 79, b2: 42, b3: 80, b4: 58, b5: 85, b6: 48, b7: 75, b8: 35, subs: [
+            { name: 'حفاضات', b1: 82, b2: 45, b3: 82, b4: 60, b5: 88, b6: 50, b7: 78, b8: 38 },
+            { name: 'حليب أطفال', b1: 78, b2: 40, b3: 78, b4: 55, b5: 82, b6: 45, b7: 72, b8: 32 },
+            { name: 'طعام أطفال', b1: 75, b2: 38, b3: 80, b4: 58, b5: 85, b6: 48, b7: 74, b8: 34 },
+        ]
+    },
+    {
+        cat: 'مستلزمات منزلية', b1: 78, b2: 43, b3: 74, b4: 62, b5: 89, b6: 52, b7: 80, b8: 40, subs: [
+            { name: 'منظفات', b1: 80, b2: 45, b3: 76, b4: 65, b5: 90, b6: 55, b7: 82, b8: 42 },
+            { name: 'أدوات مطبخ', b1: 75, b2: 40, b3: 72, b4: 58, b5: 88, b6: 48, b7: 78, b8: 38 },
+            { name: 'معطرات جو', b1: 82, b2: 46, b3: 78, b4: 65, b5: 92, b6: 55, b7: 84, b8: 44 },
+            { name: 'أكياس وأغلفة', b1: 72, b2: 38, b3: 68, b4: 55, b5: 85, b6: 45, b7: 74, b8: 35 },
+        ]
+    },
+    {
+        cat: 'منتجات غذائية', b1: 78, b2: 42, b3: 82, b4: 65, b5: 92, b6: 55, b7: 84, b8: 38, subs: [
+            { name: 'حبوب وأرز', b1: 80, b2: 44, b3: 85, b4: 68, b5: 94, b6: 58, b7: 86, b8: 40 },
+            { name: 'زيوت', b1: 76, b2: 40, b3: 80, b4: 62, b5: 90, b6: 52, b7: 82, b8: 36 },
+            { name: 'حليب وألبان', b1: 82, b2: 45, b3: 84, b4: 70, b5: 95, b6: 58, b7: 88, b8: 42 },
+            { name: 'معلبات', b1: 72, b2: 38, b3: 78, b4: 58, b5: 88, b6: 50, b7: 78, b8: 32 },
+            { name: 'خبز ومعجنات', b1: 78, b2: 42, b3: 80, b4: 64, b5: 90, b6: 54, b7: 84, b8: 38 },
+        ]
+    },
+    {
+        cat: 'منتجات ورقية', b1: 78, b2: 42, b3: 70, b4: 50, b5: 83, b6: 45, b7: 72, b8: 30, subs: [
+            { name: 'مناديل', b1: 80, b2: 44, b3: 72, b4: 52, b5: 85, b6: 48, b7: 74, b8: 32 },
+            { name: 'ورق تواليت', b1: 76, b2: 40, b3: 68, b4: 48, b5: 80, b6: 42, b7: 70, b8: 28 },
+            { name: 'ورق مطبخ', b1: 78, b2: 42, b3: 70, b4: 50, b5: 84, b6: 45, b7: 72, b8: 30 },
+        ]
+    },
+    {
+        cat: 'مسطحات', b1: 78, b2: 42, b3: 75, b4: 55, b5: 86, b6: 48, b7: 76, b8: 32, subs: [
+            { name: 'مسطحات ساخنة', b1: 80, b2: 44, b3: 78, b4: 58, b5: 88, b6: 50, b7: 78, b8: 34 },
+            { name: 'مسطحات باردة', b1: 76, b2: 40, b3: 72, b4: 52, b5: 84, b6: 46, b7: 74, b8: 30 },
+        ]
+    },
 ];
 
 function getBarColor(score: number) {
@@ -47,6 +102,7 @@ export default function BranchesPage() {
     const regions = useMemo(() => getRegionalData(), []);
     const topBranch = [...branches].sort((a, b) => b.revenue - a.revenue)[0];
     const avgScore = Math.round(branchScores.reduce((a, b) => a + b.score, 0) / branchScores.length);
+    const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
 
     // ── Simple donut gauge ──
     const gColor = avgScore >= 70 ? 'var(--accent-green)' : avgScore >= 50 ? 'var(--accent-amber)' : 'var(--accent-red)';
@@ -321,24 +377,55 @@ export default function BranchesPage() {
                         <tbody>
                             {categoryScores.map(c => {
                                 const row = c as unknown as Record<string, number | string>;
+                                const isOpen = expandedCats[c.cat];
+                                const hasSubs = c.subs && c.subs.length > 0;
                                 return (
-                                    <tr key={c.cat}>
-                                        <td style={{ color: 'var(--text-primary)', fontWeight: 500, minWidth: '120px' }}>{c.cat}</td>
-                                        {branchScores.map((b, bi) => {
-                                            const val = Number(row[`b${bi + 1}`]) || 0;
-                                            return (
-                                                <td key={b.id} style={{ textAlign: 'center', padding: '4px 6px' }}>
-                                                    <div style={{
-                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                        minWidth: 38, padding: '2px 6px', borderRadius: 4,
-                                                        background: val >= 70 ? 'rgba(34,197,94,0.15)' : val >= 50 ? 'rgba(234,179,8,0.12)' : val >= 30 ? 'rgba(249,115,22,0.12)' : 'rgba(239,68,68,0.12)',
-                                                    }}>
-                                                        <span className="text-[11px] font-bold" style={{ color: getBarColor(val) }} dir="ltr">{val}%</span>
-                                                    </div>
+                                    <React.Fragment key={c.cat}>
+                                        <tr
+                                            style={{ cursor: hasSubs ? 'pointer' : 'default' }}
+                                            onClick={() => hasSubs && setExpandedCats(p => ({ ...p, [c.cat]: !p[c.cat] }))}
+                                        >
+                                            <td style={{ color: 'var(--text-primary)', fontWeight: 500, minWidth: '120px' }}>
+                                                <div className="flex items-center gap-1.5">
+                                                    {hasSubs && (
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', width: 14, height: 14, borderRadius: 3, background: isOpen ? 'rgba(37,99,235,0.12)' : 'var(--bg-elevated)' }}>
+                                                            {isOpen ? <ChevronDown size={10} style={{ color: 'var(--accent-blue)' }} /> : <ChevronLeft size={10} style={{ color: 'var(--text-muted)' }} />}
+                                                        </span>
+                                                    )}
+                                                    {c.cat}
+                                                </div>
+                                            </td>
+                                            {branchScores.map((b, bi) => {
+                                                const val = Number(row[`b${bi + 1}`]) || 0;
+                                                return (
+                                                    <td key={b.id} style={{ textAlign: 'center', padding: '4px 6px' }}>
+                                                        <div style={{
+                                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                            minWidth: 38, padding: '2px 6px', borderRadius: 4,
+                                                            background: val >= 70 ? 'rgba(34,197,94,0.15)' : val >= 50 ? 'rgba(234,179,8,0.12)' : val >= 30 ? 'rgba(249,115,22,0.12)' : 'rgba(239,68,68,0.12)',
+                                                        }}>
+                                                            <span className="text-[11px] font-bold" style={{ color: getBarColor(val) }} dir="ltr">{val}%</span>
+                                                        </div>
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                        {isOpen && c.subs?.map(sub => (
+                                            <tr key={sub.name} style={{ background: 'var(--bg-elevated)', opacity: 0.9 }}>
+                                                <td style={{ paddingRight: '28px', color: 'var(--text-secondary)', fontSize: '11px', minWidth: '120px' }}>
+                                                    <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>└</span> {sub.name}
                                                 </td>
-                                            );
-                                        })}
-                                    </tr>
+                                                {branchScores.map((b, bi) => {
+                                                    const val = Number((sub as unknown as Record<string, number>)[`b${bi + 1}`]) || 0;
+                                                    return (
+                                                        <td key={b.id} style={{ textAlign: 'center', padding: '3px 6px' }}>
+                                                            <span className="text-[10px] font-semibold" style={{ color: getBarColor(val) }} dir="ltr">{val}%</span>
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </React.Fragment>
                                 );
                             })}
                         </tbody>
