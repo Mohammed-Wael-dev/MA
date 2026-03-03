@@ -174,18 +174,56 @@ export default function BranchesPage() {
         })),
     };
 
-    // ── نسبة المبيعات حسب المجموعة ──
-    const salesByGroupOption = {
-        xAxis: { type: 'category' as const, data: branches.slice(0, 6).map((b) => b.nameAr.split(' ')[0]), axisLabel: { fontSize: 10 } },
-        yAxis: { type: 'value' as const, max: 100, axisLabel: { formatter: '{value}%' } },
-        series: [
-            { name: 'بقالة', type: 'bar', stack: 'total', data: [40, 35, 42, 38, 45, 37], itemStyle: { color: '#047857' } },
-            { name: 'لحوم', type: 'bar', stack: 'total', data: [22, 25, 20, 23, 18, 24], itemStyle: { color: '#2563eb' } },
-            { name: 'ألبان', type: 'bar', stack: 'total', data: [15, 18, 14, 16, 15, 17], itemStyle: { color: '#7c3aed' } },
-            { name: 'مشروبات', type: 'bar', stack: 'total', data: [12, 10, 13, 11, 12, 11], itemStyle: { color: '#d97706' } },
-            { name: 'أخرى', type: 'bar', stack: 'total', data: [11, 12, 11, 12, 10, 11], itemStyle: { color: '#64748b', borderRadius: [4, 4, 0, 0] } },
-        ],
-        legend: { data: ['بقالة', 'لحوم', 'ألبان', 'مشروبات', 'أخرى'], top: 0, left: 0 },
+    // ── صافي المبيعات عبر الزمن لكل فرع ──
+    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'جون', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const netSalesData: Record<string, number[]> = {
+        'سوق المنارة': [45140, 43200, 41800, 39600, 38100, 36500, 35200, 33800, 31500, 29700, 27920, 24380],
+        'سوق سطح النجم': [32100, 31400, 30800, 29500, 28200, 27600, 26800, 25900, 24300, 23100, 22400, 21800],
+        'سوق القويسمة': [28500, 29200, 30100, 31500, 32800, 33400, 34200, 35100, 36500, 37800, 38400, 39200],
+        'سوق راس العين': [18200, 17800, 17200, 16800, 16500, 16100, 15800, 15200, 14800, 14200, 13800, 13500],
+        'سوق البقعة': [38400, 39100, 40200, 41800, 43200, 44500, 45800, 46200, 47100, 48300, 49500, 50200],
+        'سوق الدمام': [22300, 21800, 21200, 20800, 20100, 19500, 18800, 18200, 17600, 17100, 16800, 16200],
+        'سوق الخبر': [35200, 35800, 36500, 37200, 38100, 38800, 39500, 40200, 41100, 41800, 42500, 43200],
+        'سوق جدة': [15200, 14800, 14200, 13800, 13500, 13100, 12800, 12200, 11800, 11500, 11200, 10800],
+    };
+    const netSalesByBranchOption = {
+        tooltip: { trigger: 'axis' as const },
+        legend: {
+            data: Object.keys(netSalesData),
+            bottom: 0,
+            textStyle: { fontSize: 9 },
+            type: 'scroll' as const,
+        },
+        grid: { top: '8%', bottom: '20%', left: '3%', right: '3%', containLabel: true },
+        xAxis: {
+            type: 'category' as const,
+            data: months,
+            axisLabel: { fontSize: 9 },
+            boundaryGap: false,
+        },
+        yAxis: {
+            type: 'value' as const,
+            axisLabel: {
+                fontSize: 9,
+                formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`,
+            },
+        },
+        series: Object.entries(netSalesData).map(([name, data], i) => ({
+            name,
+            type: 'line',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 4,
+            lineStyle: { width: 2 },
+            itemStyle: { color: branchColors[i] },
+            data,
+            endLabel: {
+                show: true,
+                formatter: (p: { value: number }) => `${(p.value / 1000).toFixed(1)}K`,
+                fontSize: 9,
+                color: branchColors[i],
+            },
+        })),
     };
 
     const branchColumns: TableColumn<BranchData>[] = [
@@ -436,7 +474,7 @@ export default function BranchesPage() {
             {/* ── خريطة الفروع + نسبة المبيعات ── */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 <BranchMap />
-                <ChartCard title="نسبة المبيعات حسب مجموعة المنتجات" subtitle="توزيع المبيعات لكل سوق" option={salesByGroupOption} height="460px" delay={2} />
+                <ChartCard title="صافي المبيعات عبر الزمن لكل فرع" subtitle="Net Sales Over Time by Branch" option={netSalesByBranchOption} height="460px" delay={2} />
             </div>
 
             <BranchSalesTable />
