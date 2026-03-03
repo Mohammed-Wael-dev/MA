@@ -79,8 +79,8 @@ function Dropdown({ icon: Icon, label, value, options, onChange, accent = 'var(-
             </button>
             <AnimatePresence>
                 {open && (
-                    <motion.div initial={{ opacity: 0, y: 5, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: .97 }} transition={{ duration: .13 }}
-                        style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, zIndex: 300, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', minWidth: 150, overflow: 'hidden' }}>
+                    <motion.div initial={{ opacity: 0, y: 5, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: .97 }} className='z-1050' transition={{ duration: .13 }}
+                        style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, zIndex: 1050, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', minWidth: 150, overflow: 'hidden' }}>
                         {options.map(o => (
                             <button key={o.value} onClick={() => { onChange(o.value); setOpen(false); }}
                                 className="w-full text-right px-3 py-2 text-[11px] transition-colors hover:bg-white/5 block"
@@ -120,7 +120,7 @@ function SearchDropdown({ icon: Icon, label, value, options, onChange, accent = 
             <AnimatePresence>
                 {open && (
                     <motion.div initial={{ opacity: 0, y: 5, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: .97 }} transition={{ duration: .13 }}
-                        style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, zIndex: 300, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', width: 200, overflow: 'hidden' }}>
+                        style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, zIndex: 1050, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', width: 200, overflow: 'hidden' }}>
                         <div style={{ padding: '8px 8px 4px', borderBottom: '1px solid var(--border-subtle)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 7, background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
                                 <Search size={10} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
@@ -174,7 +174,7 @@ function DateFilterDropdown({ activePeriod, setActivePeriod, dateFrom, dateTo, s
             <AnimatePresence>
                 {open && (
                     <motion.div initial={{ opacity: 0, y: 5, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: .97 }} transition={{ duration: .14 }}
-                        style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, zIndex: 300, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,.45)', width: 240, overflow: 'hidden' }}>
+                        style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, zIndex: 1050, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,.45)', width: 240, overflow: 'hidden' }}>
                         {/* Tabs */}
                         <div style={{ display: 'flex', padding: '8px 8px 0', gap: 4 }}>
                             {(['quick', 'range'] as const).map(m => (
@@ -364,7 +364,7 @@ export default function GlobalFilterBar() {
 
     return (
         <>
-            <div style={{ marginBottom: 16, borderRadius: 12, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', boxShadow: '0 2px 12px rgba(0,0,0,.2)', backdropFilter: 'blur(20px)' }}>
+            <div style={{ position: 'relative', zIndex: 100, marginBottom: 16, borderRadius: 12, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', boxShadow: '0 2px 12px rgba(0,0,0,.2)', backdropFilter: 'blur(20px)' }}>
 
                 {/* ── فلاتر لحظية ── */}
                 <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--accent-green)', letterSpacing: '.5px', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>⚡ لحظي</span>
