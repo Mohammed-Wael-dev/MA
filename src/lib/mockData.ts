@@ -243,7 +243,7 @@ export const getReportJobs = (): ReportJob[] => [
         createdAt: '2025-12-28T14:30:00',
         completedAt: '2025-12-28T14:35:00',
         fileSize: '4.2 MB',
-        formats: ['pdf', 'xlsx', 'csv'],
+        formats: ['xlsx', 'csv'],
         requestedBy: 'Admin Officer',
     },
     {
@@ -253,7 +253,7 @@ export const getReportJobs = (): ReportJob[] => [
         status: 'processing',
         progress: 67,
         createdAt: '2025-12-29T09:15:00',
-        formats: ['pdf', 'xlsx'],
+        formats: ['xlsx'],
         requestedBy: 'Regional Analyst',
     },
     {
@@ -263,7 +263,7 @@ export const getReportJobs = (): ReportJob[] => [
         status: 'pending',
         progress: 0,
         createdAt: '2025-12-29T10:00:00',
-        formats: ['pdf', 'xlsx', 'csv'],
+        formats: ['xlsx', 'csv'],
         requestedBy: 'Product Manager',
     },
     {
@@ -275,7 +275,7 @@ export const getReportJobs = (): ReportJob[] => [
         createdAt: '2025-12-27T16:00:00',
         completedAt: '2025-12-27T16:12:00',
         fileSize: '2.8 MB',
-        formats: ['pdf', 'xlsx'],
+        formats: ['xlsx'],
         requestedBy: 'HR Director',
     },
     {
@@ -285,7 +285,7 @@ export const getReportJobs = (): ReportJob[] => [
         status: 'processing',
         progress: 34,
         createdAt: '2025-12-29T08:00:00',
-        formats: ['pdf', 'xlsx', 'interactive'],
+        formats: ['xlsx', 'interactive'],
         requestedBy: 'Admin Officer',
     },
     {
@@ -295,7 +295,7 @@ export const getReportJobs = (): ReportJob[] => [
         status: 'failed',
         progress: 45,
         createdAt: '2025-12-26T11:30:00',
-        formats: ['pdf'],
+        formats: [],
         requestedBy: 'Finance Analyst',
     },
 ];

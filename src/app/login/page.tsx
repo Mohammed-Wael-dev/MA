@@ -14,6 +14,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const login = useAuthStore((s) => s.login);
     const mode = useThemeStore((s) => s.mode);
+    const isDark = mode === 'dark';
     const router = useRouter();
 
     useEffect(() => {
@@ -39,7 +40,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: '#0a0e17' }}>
+        <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: isDark ? '#0a0e17' : '#f1f5f9' }}>
             <div className="absolute inset-0 animated-grid opacity-30" />
             <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(4,120,87,0.05) 0%, transparent 60%)' }} />
             <div className="absolute top-0 right-0 w-32 h-32 opacity-20" style={{ borderTop: '2px solid #047857', borderRight: '2px solid #047857' }} />
@@ -57,8 +58,11 @@ export default function LoginPage() {
                 <div
                     className="p-8 rounded-b-xl"
                     style={{
-                        background: 'linear-gradient(135deg, rgba(26,32,53,0.95) 0%, rgba(17,24,39,0.98) 100%)',
-                        border: '1px solid #1e293b', borderTop: 'none',
+                        background: isDark
+                            ? 'linear-gradient(135deg, rgba(26,32,53,0.95) 0%, rgba(17,24,39,0.98) 100%)'
+                            : '#ffffff',
+                        border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
+                        borderTop: 'none',
                         backdropFilter: 'blur(40px)',
                         boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5), 0 0 60px rgba(4,120,87,0.03)',
                     }}
@@ -73,7 +77,7 @@ export default function LoginPage() {
                         >
                             <Shield size={32} color="#ffffff" strokeWidth={2} />
                         </motion.div>
-                        <h1 className="text-lg font-bold tracking-wide text-center" style={{ color: '#e2e8f0' }}>
+                        <h1 className="text-lg font-bold tracking-wide text-center" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
                             المؤسسة الاستهلاكية العسكرية
                         </h1>
                         <p className="text-sm mt-1" style={{ color: '#64748b' }}>
@@ -95,20 +99,20 @@ export default function LoginPage() {
                         <div>
                             <label className="text-[11px] font-medium block mb-2" style={{ color: '#64748b' }}>رقم الضابط</label>
                             <div className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all focus-within:border-[#047857]"
-                                style={{ background: '#0f1729', border: '1px solid #1e293b' }}>
+                                style={{ background: isDark ? '#0f1729' : '#f8fafc', border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0' }}>
                                 <User size={16} style={{ color: '#475569' }} />
                                 <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                                    placeholder="أدخل رقم الضابط" className="flex-1 bg-transparent outline-none text-sm" style={{ color: '#e2e8f0' }} />
+                                    placeholder="أدخل رقم الضابط" className="flex-1 bg-transparent outline-none text-sm" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }} />
                             </div>
                         </div>
 
                         <div>
                             <label className="text-[11px] font-medium block mb-2" style={{ color: '#64748b' }}>رمز الدخول</label>
                             <div className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all focus-within:border-[#047857]"
-                                style={{ background: '#0f1729', border: '1px solid #1e293b' }}>
+                                style={{ background: isDark ? '#0f1729' : '#f8fafc', border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0' }}>
                                 <Lock size={16} style={{ color: '#475569' }} />
                                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="أدخل رمز الدخول" className="flex-1 bg-transparent outline-none text-sm" style={{ color: '#e2e8f0' }} />
+                                    placeholder="أدخل رمز الدخول" className="flex-1 bg-transparent outline-none text-sm" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }} />
                             </div>
                         </div>
 
@@ -123,7 +127,7 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <div className="mt-6 pt-4 border-t text-center" style={{ borderColor: '#1e293b' }}>
+                    <div className="mt-6 pt-4 border-t text-center" style={{ borderColor: isDark ? '#1e293b' : '#e2e8f0' }}>
                         <p className="text-[10px]" style={{ color: '#334155' }}>🔒 اتصال مشفّر • AES-256</p>
                         <p className="text-[10px] mt-1" style={{ color: '#334155' }}>للأفراد المصرّح لهم فقط • الجلسة مراقبة</p>
                     </div>

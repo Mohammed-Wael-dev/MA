@@ -9,6 +9,7 @@ import {
 import ChartCard from '@/components/ui/ChartCard';
 import ReportPreviewModal from '@/components/ui/ReportPreviewModal';
 import { getReportJobs } from '@/lib/mockData';
+import { useRouter } from 'next/navigation';
 
 // ── بيانات المعاينة ──────────────────────────────────────────────────────────
 interface PreviewRow { market: string; revenue: number; cost: number; profit: number; orders: number; growth: number; }
@@ -24,6 +25,7 @@ const previewData: PreviewRow[] = [
 ];
 
 export default function ReportsPage() {
+    const router = useRouter();
     const reports = useMemo(() => getReportJobs(), []);
     const [viewingReport, setViewingReport] = useState<string | null>(null);
     const [previewType, setPreviewType] = useState<string | null>(null);
@@ -149,7 +151,7 @@ export default function ReportsPage() {
                                         {report.status === 'ready' && (
                                             <>
                                                 <button
-                                                    onClick={() => setViewingReport(isViewing ? null : report.id)}
+                                                    onClick={() => router.push('/sales')}
                                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all"
                                                     style={{
                                                         background: isViewing ? 'var(--accent-green-dim)' : 'var(--bg-elevated)',
