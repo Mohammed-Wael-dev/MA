@@ -30,6 +30,11 @@ interface ChartCardProps {
     lazyViewport?: boolean;
     /** Root margin for viewport detection (e.g. prefetch before visible). */
     lazyRootMargin?: string;
+    /**
+     * Use `visible` when axis titles extend past the plot (e.g. ECharts axis `name`);
+     * default `hidden` keeps glass-panel corners clipped cleanly.
+     */
+    panelOverflow?: 'hidden' | 'visible';
 }
 
 function scheduleAfterIdle(cb: () => void): { cancel: () => void } {
@@ -56,6 +61,7 @@ function ChartCard({
     aiPowered = false,
     lazyViewport = false,
     lazyRootMargin = '100px',
+    panelOverflow = 'hidden',
 }: ChartCardProps) {
     const mode = useThemeStore((s) => s.mode);
     const isDark = mode === 'dark';
@@ -331,7 +337,7 @@ function ChartCard({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: delay * 0.1 }}
-                className={`glass-panel overflow-hidden ${aiPowered ? 'ai-module glow-cyan' : ''} ${className}`}
+                className={`glass-panel ${panelOverflow === 'visible' ? 'overflow-visible' : 'overflow-hidden'} ${aiPowered ? 'ai-module glow-cyan' : ''} ${className}`}
             >
                 {chartShell}
             </motion.div>
@@ -358,7 +364,7 @@ function ChartCard({
                             exit={{ opacity: 0, scale: 0.95, y: 16 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="glass-panel overflow-hidden"
+                            className={`glass-panel ${panelOverflow === 'visible' ? 'overflow-visible' : 'overflow-hidden'}`}
                             style={{ width: '92vw', maxWidth: 1200, minHeight: '85vh', maxHeight: '95vh', display: 'flex', flexDirection: 'column' }}
                         >
                             <div

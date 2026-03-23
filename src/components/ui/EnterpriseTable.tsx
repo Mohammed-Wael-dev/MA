@@ -6,6 +6,7 @@ import {
     ArrowUpDown, ArrowUp, ArrowDown,
     Download, Columns3, ChevronDown, ChevronRight,
 } from 'lucide-react';
+import { ChartTitleFlagBadge, type ChartCardTitleFlag } from '@/components/ui/ChartTitleFlagBadge';
 
 export interface TableColumn<T> {
     key: string;
@@ -22,6 +23,9 @@ interface EnterpriseTableProps<T> {
     columns: TableColumn<T>[];
     data: T[];
     title?: string;
+    /** Colored flag next to the title. Defaults to blue when `title` is set. Pass `false` to hide. */
+    titleFlag?: ChartCardTitleFlag | false;
+    titleFlagNumber?: number;
     pageSize?: number;
     expandable?: boolean;
     renderExpandedRow?: (row: T) => React.ReactNode;
@@ -35,6 +39,8 @@ export default function EnterpriseTable<T extends Record<string, unknown>>({
     columns,
     data,
     title,
+    titleFlag,
+    titleFlagNumber,
     pageSize = 10,
     expandable = false,
     renderExpandedRow,
@@ -104,6 +110,9 @@ export default function EnterpriseTable<T extends Record<string, unknown>>({
 
     const activeColumns = columns.filter((c) => visibleColumns.has(c.key));
 
+    const resolvedFlag: ChartCardTitleFlag | null =
+        titleFlag === false ? null : (titleFlag ?? (title ? 'blue' : null));
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -113,7 +122,18 @@ export default function EnterpriseTable<T extends Record<string, unknown>>({
             {/* شريط الأدوات */}
             <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div>
-                    {title && <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</h3>}
+                    {title && (
+                        <div className="flex items-center gap-2">
+                            {resolvedFlag && (
+                                <ChartTitleFlagBadge
+                                    flag={resolvedFlag}
+                                    flagNumber={titleFlagNumber}
+                                    size="sm"
+                                />
+                            )}
+                            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                        </div>
+                    )}
                     <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
                         {data.length.toLocaleString('en-US')} سجل
                     </p>

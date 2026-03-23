@@ -42,7 +42,7 @@ const navItems: NavItem[] = [
     { id: 'dashboard', label: 'لوحة القيادة', icon: LayoutDashboard, href: '/dashboard' },
     { id: 'sales', label: 'تحليل المبيعات', icon: TrendingUp, href: '/sales' },
     { id: 'branches', label: 'أداء الفروع', icon: Building2, href: '/branches' },
-    { id: 'operations', label: 'العمليات', icon: Settings2, href: '/operations' },
+    { id: 'operations', label: 'السلة', icon: Settings2, href: '/operations' },
     { id: 'employees', label: 'الموظفين', icon: Users, href: '/employees' },
     { id: 'customers', label: 'العملاء', icon: UserCircle, href: '/customers' },
     { id: 'products', label: 'المنتجات', icon: Package, href: '/products' },

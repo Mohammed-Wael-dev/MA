@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Download } from 'lucide-react';
+import { ChartTitleFlagBadge } from './ChartTitleFlagBadge';
 
 // ── هيكل البيانات ──
 interface RowData {
@@ -230,9 +231,12 @@ export default function BranchSalesTable() {
                         <Download size={14} style={{ color: 'var(--accent-blue)' }} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                            تفاصيل أداء مبيعات الفروع
-                        </h3>
+                        <div className="flex items-center gap-2">
+                            <ChartTitleFlagBadge flag="green" size="sm" />
+                            <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                                تفاصيل أداء مبيعات الفروع
+                            </h3>
+                        </div>
                         <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
                             Branch Sales Performance Details
                         </p>

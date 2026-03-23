@@ -2,9 +2,11 @@
 
 import '@/lib/echarts/register-bar-line-pie';
 import dynamic from 'next/dynamic';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Calendar, TrendingUp, DollarSign, BarChart3, Percent } from 'lucide-react';
+import { getMonthlySalesData } from '@/lib/mockData';
+import { PRIMARY_GREEN, PRIMARY_SLATE, PRIMARY_CYAN } from '@/lib/colors';
 
 const ChartCard = dynamic(() => import('@/components/ui/ChartCard'), {
     ssr: false,
@@ -41,9 +43,55 @@ const catNetP2 = [3200, 12500, 22000, 300, 1200, 14800, 57500, 8400, 9100];
 const catProfP1 = [400, 1200, 2800, 30, 100, 1500, 5200, 1100, 950];
 const catProfP2 = [1100, 4200, 7800, 100, 380, 5200, 22000, 3100, 3200];
 
+const selectedYear = '2025';
+const monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
 export default function TimeComparePage() {
     const [period1] = useState({ from: '2020-02-17', to: '2021-01-27' });
     const [period2] = useState({ from: '2021-11-08', to: '2023-08-23' });
+
+    const salesData = useMemo(() => getMonthlySalesData(), []);
+    const currentYearData = salesData.map((d) => d.revenue);
+    const previousYearData = currentYearData.map((v) => Math.round(v * 0.88));
+
+    const yoyComparisonOption = {
+        xAxis: { type: 'category' as const, data: monthsAr },
+        yAxis: { type: 'value' as const, axisLabel: { formatter: (v: number) => `${(v / 1000000).toFixed(1)}M` } },
+        series: [
+            {
+                name: `${selectedYear}`,
+                type: 'bar' as const,
+                data: currentYearData,
+                barWidth: 16,
+                barGap: '20%',
+                itemStyle: { color: PRIMARY_GREEN, borderRadius: [4, 4, 0, 0] },
+            },
+            {
+                name: `${Number(selectedYear) - 1}`,
+                type: 'bar' as const,
+                data: previousYearData,
+                barWidth: 16,
+                itemStyle: { color: PRIMARY_SLATE, borderRadius: [4, 4, 0, 0] },
+            },
+            {
+                name: 'الفرق %',
+                type: 'line' as const,
+                yAxisIndex: 0,
+                data: currentYearData.map((v, i) =>
+                    Math.round(((v - previousYearData[i]) / previousYearData[i]) * 100 * 100) / 100
+                ),
+                lineStyle: { color: PRIMARY_CYAN, width: 2, type: 'dashed' as const },
+                itemStyle: { color: PRIMARY_CYAN },
+                tooltip: { valueFormatter: (v: number) => `${v}%` },
+            },
+        ],
+        legend: {
+            data: [`${selectedYear}`, `${Number(selectedYear) - 1}`, 'الفرق %'],
+            bottom: 0,
+            left: 'center',
+            textStyle: { color: 'var(--text-muted)' },
+        },
+    };
 
     const totalP1 = 68000;
     const totalP2 = 177000;
@@ -258,6 +306,15 @@ export default function TimeComparePage() {
                 <ChartCard title="قيمة الخصم حسب الفئة" subtitle="Discount Value by Category & Period" option={discCatOption} height="300px" delay={2} />
                 <ChartCard title="عدد المعاملات حسب الفترة" subtitle="No. of Transactions by Period" option={txPieOption} height="300px" delay={3} />
             </div>
+
+            <ChartCard
+                title="مقارنة المبيعات — العام الحالي مقابل السابق"
+                titleFlag="blue"
+                subtitle="مقارنة شهرية مع نسبة التغيير"
+                option={yoyComparisonOption}
+                height="340px"
+                delay={1}
+            />
         </div>
     );
 }

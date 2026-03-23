@@ -2,9 +2,12 @@
 
 import '@/lib/echarts/register-bar-line-pie';
 import dynamic from 'next/dynamic';
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings2, Truck, Package, Clock, CheckCircle, BarChart3, Undo2, ShoppingCart } from 'lucide-react';
+import { ChartTitleFlagBadge } from '@/components/ui/ChartTitleFlagBadge';
+import MetricsBubblePlot, { type MetricsBubblePoint } from '@/components/ui/MetricsBubblePlot';
+import { BRANCH_PRODUCT_ANALYSIS, buildProductBubbleRows, type ProductBubbleRow } from '@/lib/branchProductAnalysis';
 
 const ChartCard = dynamic(() => import('@/components/ui/ChartCard'), {
     ssr: false,
@@ -13,6 +16,8 @@ const ChartCard = dynamic(() => import('@/components/ui/ChartCard'), {
 import { PRIMARY_GREEN, PRIMARY_BLUE } from '@/lib/colors';
 
 export default function OperationsPage() {
+    const [expandedBasketAtv, setExpandedBasketAtv] = useState<Record<string, boolean>>({});
+
     const operationalKPIs = [
         { icon: BarChart3, label: 'الأرباح', value: '8.6M', sublabel: 'صافي الأرباح', color: 'var(--accent-green)' },
         { icon: Truck, label: 'المبيعات', value: '24.6M', sublabel: 'إجمالي المبيعات', color: 'var(--accent-cyan)' },
@@ -131,7 +136,7 @@ export default function OperationsPage() {
     return (
         <div className="space-y-6">
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="flex items-center gap-3 mb-1"><Settings2 size={24} style={{ color: 'var(--accent-green)' }} /><h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>العمليات وأداء الفروع</h1></div>
+                <div className="flex items-center gap-3 mb-1"><Settings2 size={24} style={{ color: 'var(--accent-green)' }} /><h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>السلة</h1></div>
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>تحليل الأداء التشغيلي حسب الأسواق — التقرير الثالث</p>
             </motion.div>
 
@@ -146,14 +151,45 @@ export default function OperationsPage() {
                 ))}
             </div>
 
-            <ChartCard title="مخطط الأرباح السنوي" subtitle="صافي الأرباح الشهرية" option={annualProfitOption} height="320px" delay={1} />
-
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 <ChartCard title="أسباب المرتجعات" subtitle="تحليل أسباب المرتجعات حسب النوع" option={returnsReasonsOption} height="320px" delay={2} />
                 <ChartCard title="تحليل السلة الشرائية" subtitle="عدد المواد وقيمتها داخل السلة" option={basketAnalysisOption} height="320px" delay={3} />
             </div>
 
             <ChartCard title="عدد المبيعات والقيمة المادية" subtitle="لكل منتج — الوحدات المباعة مقابل القيمة" option={productPerformanceOption} height="320px" delay={4} />
+
+            {(() => {
+                const t2 = buildProductBubbleRows(BRANCH_PRODUCT_ANALYSIS, expandedBasketAtv, setExpandedBasketAtv, 'bs');
+                const toBubble = (r: ProductBubbleRow, xValue: number, yValue: number): MetricsBubblePoint => ({
+                    key: r.key,
+                    label: r.label,
+                    depth: r.depth as 0 | 1 | 2,
+                    xValue,
+                    yValue,
+                    hasChildren: r.has,
+                    open: r.open,
+                    onClick: r.click,
+                    vol: r.vol,
+                    price: r.price,
+                    basket: r.basket,
+                    atv: r.atv,
+                });
+                const bubblePoints2 = t2.map((r) => toBubble(r, r.basket, r.atv));
+                return (
+                    <div className="glass-panel p-0 overflow-hidden w-full">
+                        <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                            <div className="flex items-center gap-2">
+                                <ChartTitleFlagBadge flag="green" size="sm" />
+                                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>مقارنة متوسط حجم السلة وقيمة الفاتورة</h3>
+                            </div>
+                            <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                انقر على دائرة الفرع أو الفئة للتوسيع • المحور الأفقي: السلة، العمودي: ATV
+                            </p>
+                        </div>
+                        <MetricsBubblePlot points={bubblePoints2} xLabel="متوسط السلة" yLabel="ATV" variant="green" plotHeight={420} />
+                    </div>
+                );
+            })()}
         </div>
     );
 }

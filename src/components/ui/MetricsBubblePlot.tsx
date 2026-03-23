@@ -60,11 +60,11 @@ function baseSize(depth: 0 | 1 | 2) {
     return 10;
 }
 
-const Y_TICK_COUNT = 5;
+const AXIS_TICK_COUNT = 5;
 
-function yTickValues(min: number, max: number): number[] {
+function axisTickValues(min: number, max: number): number[] {
     if (min === max) return [min];
-    return Array.from({ length: Y_TICK_COUNT }, (_, i) => min + ((max - min) * i) / (Y_TICK_COUNT - 1));
+    return Array.from({ length: AXIS_TICK_COUNT }, (_, i) => min + ((max - min) * i) / (AXIS_TICK_COUNT - 1));
 }
 
 /** Tick text: K for large volumes, else compact decimal (matches bar-chart style labels). */
@@ -75,6 +75,13 @@ function formatYTick(v: number) {
     return Number.isInteger(v) ? `${v}` : v.toFixed(1);
 }
 
+export type MetricsBubbleDetailLabels = {
+    vol?: string;
+    price?: string;
+    basket?: string;
+    atv?: string;
+};
+
 export type MetricsBubblePlotProps = {
     points: MetricsBubblePoint[];
     xLabel: string;
@@ -82,21 +89,59 @@ export type MetricsBubblePlotProps = {
     /** Dot / accent palette */
     variant: 'blue' | 'green';
     plotHeight?: number;
+    /** Override Arabic labels in the side detail panel (defaults: الحجم، م. السعر، السلة، ATV). */
+    detailLabels?: MetricsBubbleDetailLabels;
+    /** When false, hide the فرع / فئة / منتج legend row (e.g. flat cashier view). */
+    showDepthLegend?: boolean;
+    /** Subtitle under the selected name (default: فرع / فئة / منتج by depth). */
+    entitySubtitle?: (depth: 0 | 1 | 2) => string;
+    /** Format the «price» metric in the detail panel (default: one decimal). */
+    formatPrice?: (n: number) => string;
+    /**
+     * `depth`: bubble size by hierarchy level (default).
+     * `volume`: scale radius by `basket` (min–max across points), e.g. عدد المواد الملغات.
+     */
+    bubbleSizing?: 'depth' | 'volume';
+    /** Min/max labels under the X axis (defaults to same compact rules as Y). */
+    formatXTick?: (v: number) => string;
 };
 
-export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plotHeight = 400 }: MetricsBubblePlotProps) {
+const defaultEntitySubtitle = (depth: 0 | 1 | 2) =>
+    depth === 0 ? 'فرع' : depth === 1 ? 'فئة' : 'منتج';
+
+export default function MetricsBubblePlot({
+    points,
+    xLabel,
+    yLabel,
+    variant,
+    plotHeight = 400,
+    detailLabels,
+    showDepthLegend = true,
+    entitySubtitle = defaultEntitySubtitle,
+    formatPrice = (n: number) => n.toFixed(1),
+    bubbleSizing = 'depth',
+    formatXTick,
+}: MetricsBubblePlotProps) {
+    const dl = {
+        vol: detailLabels?.vol ?? 'الحجم',
+        price: detailLabels?.price ?? 'م. السعر',
+        basket: detailLabels?.basket ?? 'السلة',
+        atv: detailLabels?.atv ?? 'ATV',
+    };
+    const fmtX = formatXTick ?? formatYTick;
     const uid = useId().replace(/:/g, '');
     const gridId = `mbp-grid-${uid}`;
     const [selected, setSelected] = useState<MetricsBubblePoint | null>(null);
     const [hovered, setHovered] = useState<string | null>(null);
 
-    const { positioned, xAxisMeta, yAxisMeta, yScale } = useMemo(() => {
+    const { positioned, xAxisMeta, yAxisMeta, yScale, xScale } = useMemo(() => {
         if (points.length === 0) {
             return {
                 positioned: [] as (MetricsBubblePoint & { leftPct: number; topPct: number })[],
                 xAxisMeta: { min: 0, max: 0 },
                 yAxisMeta: { min: 0, max: 0 },
                 yScale: normalizeAxis([0, 0], 12),
+                xScale: normalizeAxis([0, 0], 10),
             };
         }
         const xs = points.map((p) => p.xValue);
@@ -114,10 +159,30 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
             xAxisMeta,
             yAxisMeta,
             yScale: yAxis,
+            xScale: xAxis,
         };
     }, [points]);
 
-    const yTicks = useMemo(() => yTickValues(yAxisMeta.min, yAxisMeta.max), [yAxisMeta.min, yAxisMeta.max]);
+    const yTicks = useMemo(() => axisTickValues(yAxisMeta.min, yAxisMeta.max), [yAxisMeta.min, yAxisMeta.max]);
+    const xTicks = useMemo(() => axisTickValues(xAxisMeta.min, xAxisMeta.max), [xAxisMeta.min, xAxisMeta.max]);
+
+    const basketSizeRange = useMemo(() => {
+        if (points.length === 0 || bubbleSizing !== 'volume') return { min: 0, max: 1 };
+        const bs = points.map((p) => p.basket);
+        return { min: Math.min(...bs), max: Math.max(...bs) };
+    }, [points, bubbleSizing]);
+
+    const bubbleRadius = (p: MetricsBubblePoint, isSel: boolean, isHov: boolean) => {
+        const extra = (isSel ? 4 : 0) + (isHov ? 2 : 0);
+        if (bubbleSizing !== 'volume') {
+            return baseSize(p.depth) + extra;
+        }
+        const { min, max } = basketSizeRange;
+        const span = max - min;
+        const t = span <= 0 ? 0.5 : (p.basket - min) / span;
+        const base = 12 + t * 22;
+        return Math.max(10, base) + extra;
+    };
 
     const handlePointClick = (p: MetricsBubblePoint) => {
         if (p.hasChildren && p.onClick) p.onClick();
@@ -146,11 +211,17 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
                 </div>
 
                 <div
-                    className="flex flex-1 min-w-0 min-h-0"
-                    style={{ paddingTop: 8, paddingBottom: 28, paddingRight: 8 }}
+                    className="grid flex-1 min-w-0 min-h-0"
+                    style={{
+                        paddingTop: 8,
+                        paddingBottom: 10,
+                        paddingRight: 8,
+                        gridTemplateColumns: 'auto 1fr',
+                        gridTemplateRows: 'minmax(0, 1fr) auto auto',
+                    }}
                 >
-                    {/* Y-axis tick column (same vertical scale as plot) */}
-                    <div className="relative shrink-0 w-9 self-stretch">
+                    {/* Y-axis tick column — row 1 only, same height as plot */}
+                    <div className="relative shrink-0 w-9 min-h-0" style={{ gridColumn: 1, gridRow: 1 }}>
                         {yTicks.map((t) => {
                             const yPct = yScale.toYPct(t);
                             return (
@@ -172,10 +243,12 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
                         })}
                     </div>
 
-                    {/* Plot area: grid, horizontal layers, bubbles */}
+                    {/* Plot area: grid, horizontal + vertical guides, bubbles */}
                     <div
-                        className="relative flex-1 min-w-0 min-h-0"
+                        className="relative min-h-0 min-w-0"
                         style={{
+                            gridColumn: 2,
+                            gridRow: 1,
                             background: 'radial-gradient(ellipse at 50% 50%, rgba(37,99,235,0.03) 0%, transparent 70%)',
                         }}
                     >
@@ -210,6 +283,22 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
                                 />
                             );
                         })}
+                        {xTicks.map((t) => {
+                            const xPct = xScale.toXPct(t);
+                            return (
+                                <line
+                                    key={`x-${t}`}
+                                    x1={`${xPct}%`}
+                                    y1="0%"
+                                    x2={`${xPct}%`}
+                                    y2="100%"
+                                    stroke="var(--border-subtle)"
+                                    strokeWidth={1}
+                                    strokeOpacity={0.85}
+                                    vectorEffect="non-scaling-stroke"
+                                />
+                            );
+                        })}
                     </svg>
 
                     <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, opacity: 0.05, zIndex: 0, pointerEvents: 'none' }}>
@@ -222,7 +311,7 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
                         const isSel = selected?.key === p.key;
                         const isHov = hovered === p.key;
                         const color = depthColor(p.depth, variant);
-                        const sz = baseSize(p.depth) + (isSel ? 4 : 0) + (isHov ? 2 : 0);
+                        const sz = bubbleRadius(p, isSel, isHov);
 
                         return (
                             <div
@@ -294,25 +383,49 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
                                         lineHeight: 1.2,
                                     }}
                                 >
-                                    {p.label.length > 18 ? `${p.label.slice(0, 16)}…` : p.label}
+                                    {p.label.length > 26 ? `${p.label.slice(0, 24)}…` : p.label}
                                 </div>
                             </div>
                         );
                     })}
                     </div>
-                </div>
 
-                {/* X axis label + range (aligned under plot area only) */}
-                <div
-                    className="absolute bottom-1 flex justify-center items-center gap-3 text-[9px] px-2"
-                    style={{ left: 22 + 36, right: 8, color: 'var(--text-muted)' }}
-                    dir="ltr"
-                >
-                    <span>{formatYTick(xAxisMeta.min)}</span>
-                    <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                        {xLabel}
-                    </span>
-                    <span>{formatYTick(xAxisMeta.max)}</span>
+                    {/* X-axis tick row — column 2, under plot */}
+                    <div
+                        className="relative shrink-0 h-[22px] w-full min-w-0"
+                        style={{ gridColumn: 2, gridRow: 2 }}
+                        dir="ltr"
+                    >
+                        {xTicks.map((t) => {
+                            const xPct = xScale.toXPct(t);
+                            return (
+                                <div
+                                    key={`xl-${t}`}
+                                    className="absolute text-[8px] font-medium tabular-nums pointer-events-none top-0.5"
+                                    style={{
+                                        color: 'var(--text-muted)',
+                                        left: `${xPct}%`,
+                                        transform: 'translateX(-50%)',
+                                        lineHeight: 1,
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {fmtX(t)}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* X axis title (under tick marks) */}
+                    <div
+                        className="relative shrink-0 flex justify-center items-center py-0.5 text-[9px] px-1"
+                        style={{ gridColumn: 2, gridRow: 3, color: 'var(--text-muted)' }}
+                        dir="ltr"
+                    >
+                        <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                            {xLabel}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -332,7 +445,7 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
                                         {selected.label}
                                     </p>
                                     <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                                        {selected.depth === 0 ? 'فرع' : selected.depth === 1 ? 'فئة' : 'منتج'}
+                                        {entitySubtitle(selected.depth)}
                                     </p>
                                 </div>
                                 <button type="button" onClick={() => setSelected(null)} className="shrink-0 p-0.5" style={{ color: 'var(--text-muted)' }}>
@@ -341,25 +454,27 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
                             </div>
                             <div className="px-3 py-2 space-y-2 text-[11px]">
                                 <div className="flex justify-between gap-2">
-                                    <span style={{ color: 'var(--text-muted)' }}>الحجم</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>{dl.vol}</span>
                                     <span className="font-semibold" style={{ color: 'var(--text-secondary)' }} dir="ltr">
                                         {fk(selected.vol)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between gap-2">
-                                    <span style={{ color: 'var(--text-muted)' }}>م. السعر</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>{dl.price}</span>
                                     <span className="font-semibold" style={{ color: 'var(--accent-blue)' }} dir="ltr">
-                                        {selected.price.toFixed(1)}
+                                        {formatPrice(selected.price)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between gap-2">
-                                    <span style={{ color: 'var(--text-muted)' }}>السلة</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>{dl.basket}</span>
                                     <span className="font-semibold" style={{ color: 'var(--text-secondary)' }} dir="ltr">
-                                        {selected.basket.toFixed(1)}
+                                        {Number.isInteger(selected.basket)
+                                            ? selected.basket.toLocaleString('en-US')
+                                            : selected.basket.toFixed(1)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between gap-2">
-                                    <span style={{ color: 'var(--text-muted)' }}>ATV</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>{dl.atv}</span>
                                     <span className="font-semibold" style={{ color: 'var(--accent-green)' }} dir="ltr">
                                         {selected.atv.toFixed(1)}
                                     </span>
@@ -376,33 +491,48 @@ export default function MetricsBubblePlot({ points, xLabel, yLabel, variant, plo
             </AnimatePresence>
             </div>
 
-            <div
-                className="flex flex-wrap items-center gap-3 px-4 py-2 border-t text-[9px]"
-                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)' }}
-            >
-                <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                    المستوى:
-                </span>
-                {(
-                    [
-                        { label: 'فرع', d: 0 as const },
-                        { label: 'فئة', d: 1 as const },
-                        { label: 'منتج', d: 2 as const },
-                    ] as const
-                ).map(({ label, d }) => (
-                    <div key={label} className="flex items-center gap-1.5">
-                        <div
-                            style={{
-                                width: 8 + d * 2,
-                                height: 8 + d * 2,
-                                borderRadius: '50%',
-                                background: depthColor(d, variant),
-                            }}
-                        />
-                        <span>{label}</span>
-                    </div>
-                ))}
-            </div>
+            {showDepthLegend && (
+                <div
+                    className="flex flex-wrap items-center gap-3 px-4 py-2 border-t text-[9px]"
+                    style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)' }}
+                >
+                    <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                        المستوى:
+                    </span>
+                    {(
+                        [
+                            { label: 'فرع', d: 0 as const },
+                            { label: 'فئة', d: 1 as const },
+                            { label: 'منتج', d: 2 as const },
+                        ] as const
+                    ).map(({ label, d }) => (
+                        <div key={label} className="flex items-center gap-1.5">
+                            <div
+                                style={{
+                                    width: 8 + d * 2,
+                                    height: 8 + d * 2,
+                                    borderRadius: '50%',
+                                    background: depthColor(d, variant),
+                                }}
+                            />
+                            <span>{label}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {!showDepthLegend && bubbleSizing === 'volume' && (
+                <div
+                    className="flex flex-wrap items-center gap-2 px-4 py-2 border-t text-[9px]"
+                    style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)' }}
+                    dir="rtl"
+                >
+                    <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                        دليل الحجم:
+                    </span>
+                    <span>الدائرة الأكبر = أكبر عدد للمواد الملغات</span>
+                    <span className="opacity-70">(عدد المواد الملغات)</span>
+                </div>
+            )}
         </div>
     );
 }

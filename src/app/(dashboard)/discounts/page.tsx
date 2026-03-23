@@ -418,6 +418,29 @@ export default function DiscountsPage() {
             }],
     };
 
+    // ── تحليل المبيعات حسب نسبة الخصم (من صفحة المبيعات) ──
+    const salesByDiscountOption = {
+        xAxis: { type: 'category' as const, data: ['بدون خصم', '5%', '10%', '15%', '20%', '25%+'] },
+        yAxis: { type: 'value' as const, axisLabel: { formatter: (v: number) => `${(v / 1000000).toFixed(1)}M` } },
+        series: [
+            {
+                name: 'المبيعات',
+                type: 'bar' as const,
+                data: [8200000, 5100000, 4300000, 3600000, 2100000, 1300000],
+                itemStyle: { color: PRIMARY_GREEN, borderRadius: [4, 4, 0, 0] },
+                barWidth: 28,
+            },
+            {
+                name: 'الأرباح',
+                type: 'bar' as const,
+                data: [2050000, 1120000, 730000, 468000, 189000, 52000],
+                itemStyle: { color: PRIMARY_CYAN, borderRadius: [4, 4, 0, 0] },
+                barWidth: 28,
+            },
+        ],
+        legend: { data: ['المبيعات', 'الأرباح'], bottom: 0, left: 'center' },
+    };
+
     const kpis = [
         { icon: DollarSign, label: 'صافي المبيعات', value: '425.92K', color: PRIMARY_GREEN, dim: 'rgba(34,197,94,0.1)' },
         { icon: TrendingUp, label: 'قيمة الربح', value: '155.52K', color: PRIMARY_CYAN, dim: 'rgba(14,165,233,0.1)' },
@@ -718,6 +741,16 @@ export default function DiscountsPage() {
                     </table>
                 </div>
             </div>
+
+            <ChartCard
+                title="تحليل المبيعات حسب نسبة الخصم"
+                titleFlag="red"
+                titleFlagNumber={1}
+                subtitle="تأثير الخصومات على المبيعات والأرباح"
+                option={salesByDiscountOption}
+                height="300px"
+                delay={1}
+            />
         </div>
     );
 }

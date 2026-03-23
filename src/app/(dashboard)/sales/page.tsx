@@ -29,6 +29,7 @@ export default function SalesPage() {
 
     const [selectedYear] = useState('2025');
     const [drillLevel, setDrillLevel] = useState<'year' | 'quarter' | 'month'>('month');
+    const [drillSeriesMode, setDrillSeriesMode] = useState<'both' | 'sales' | 'profit'>('both');
 
     const salesKPIs = [
         { icon: DollarSign, label: 'تكلفة المواد', value: `${(totalCost / 1000000).toFixed(1)}M`, sublabel: 'د.أ', color: 'var(--accent-red)' },
@@ -95,36 +96,75 @@ export default function SalesPage() {
     };
     const drillData = getDrillData();
 
-    const drillDownOption = {
-        xAxis: { type: 'category' as const, data: drillData.labels },
-        yAxis: [
-            { type: 'value' as const, name: 'المبيعات', axisLabel: { formatter: (v: number) => `${(v / 1000000).toFixed(1)}M` } },
-            { type: 'value' as const, name: 'الأرباح', axisLabel: { formatter: (v: number) => `${(v / 1000000).toFixed(1)}M` } },
-        ],
-        series: [
-            {
-                name: 'المبيعات',
-                type: 'bar',
-                data: drillData.values,
-                barWidth: drillLevel === 'month' ? 18 : 40,
-                itemStyle: { color: PRIMARY_GREEN, borderRadius: [4, 4, 0, 0] },
-            },
-            {
-                name: 'الأرباح',
-                type: 'line',
-                yAxisIndex: 1,
-                data: drillData.profits,
-                lineStyle: { color: PRIMARY_CYAN, width: 2.5 },
-                itemStyle: { color: PRIMARY_CYAN, borderWidth: 2 },
-                symbol: 'circle',
-                symbolSize: 8,
-                smooth: true,
-                areaStyle: { color: 'rgba(8,145,178,0.08)' },
-            },
-        ],
-        legend: { data: ['المبيعات', 'الأرباح'], bottom: 0, left: 'center', textStyle: { color: '#94a3b8', fontSize: 11 } },
-        grid: { bottom: '15%' },
+    const salesYAxis = {
+        type: 'value' as const,
+        name: 'المبيعات',
+        axisLabel: { formatter: (v: number) => `${(v / 1000000).toFixed(1)}M` },
     };
+    const profitYAxis = {
+        type: 'value' as const,
+        name: 'الأرباح',
+        axisLabel: { formatter: (v: number) => `${(v / 1000000).toFixed(1)}M` },
+    };
+    const salesBarSeries = {
+        name: 'المبيعات',
+        type: 'bar' as const,
+        data: drillData.values,
+        barWidth: drillLevel === 'month' ? 18 : 40,
+        itemStyle: { color: PRIMARY_GREEN, borderRadius: [4, 4, 0, 0] },
+    };
+    const profitLineSeries = {
+        name: 'الأرباح',
+        type: 'line' as const,
+        yAxisIndex: drillSeriesMode === 'both' ? 1 : 0,
+        data: drillData.profits,
+        lineStyle: { color: PRIMARY_CYAN, width: 2.5 },
+        itemStyle: { color: PRIMARY_CYAN, borderWidth: 2 },
+        symbol: 'circle' as const,
+        symbolSize: 8,
+        smooth: true,
+        areaStyle: { color: 'rgba(8,145,178,0.08)' },
+    };
+
+    const drillDownOption =
+        drillSeriesMode === 'both'
+            ? {
+                xAxis: { type: 'category' as const, data: drillData.labels },
+                yAxis: [salesYAxis, profitYAxis],
+                series: [salesBarSeries, profitLineSeries],
+                legend: {
+                    data: ['المبيعات', 'الأرباح'],
+                    bottom: 0,
+                    left: 'center',
+                    textStyle: { color: '#94a3b8', fontSize: 11 },
+                },
+                grid: { bottom: '15%' },
+            }
+            : drillSeriesMode === 'sales'
+                ? {
+                    xAxis: { type: 'category' as const, data: drillData.labels },
+                    yAxis: salesYAxis,
+                    series: [salesBarSeries],
+                    legend: {
+                        data: ['المبيعات'],
+                        bottom: 0,
+                        left: 'center',
+                        textStyle: { color: '#94a3b8', fontSize: 11 },
+                    },
+                    grid: { bottom: '15%' },
+                }
+                : {
+                    xAxis: { type: 'category' as const, data: drillData.labels },
+                    yAxis: profitYAxis,
+                    series: [profitLineSeries],
+                    legend: {
+                        data: ['الأرباح'],
+                        bottom: 0,
+                        left: 'center',
+                        textStyle: { color: '#94a3b8', fontSize: 11 },
+                    },
+                    grid: { bottom: '15%' },
+                };
 
     // ── مبيعات مقابل أرباح حسب المنتج ──
     const salesVsProfitOption = {
@@ -152,29 +192,6 @@ export default function SalesPage() {
         ],
         legend: { data: ['الكمية المباعة', 'الأرباح'], bottom: 0, left: 'center' },
         grid: { bottom: '20%' },
-    };
-
-    // ── المبيعات حسب الخصم ──
-    const salesByDiscountOption = {
-        xAxis: { type: 'category' as const, data: ['بدون خصم', '5%', '10%', '15%', '20%', '25%+'] },
-        yAxis: { type: 'value' as const, axisLabel: { formatter: (v: number) => `${(v / 1000000).toFixed(1)}M` } },
-        series: [
-            {
-                name: 'المبيعات',
-                type: 'bar',
-                data: [8200000, 5100000, 4300000, 3600000, 2100000, 1300000],
-                itemStyle: { color: PRIMARY_GREEN, borderRadius: [4, 4, 0, 0] },
-                barWidth: 28,
-            },
-            {
-                name: 'الأرباح',
-                type: 'bar',
-                data: [2050000, 1120000, 730000, 468000, 189000, 52000],
-                itemStyle: { color: PRIMARY_CYAN, borderRadius: [4, 4, 0, 0] },
-                barWidth: 28,
-            },
-        ],
-        legend: { data: ['المبيعات', 'الأرباح'], bottom: 0, left: 'center' },
     };
 
     // ── شلال الإيرادات ──
@@ -229,28 +246,52 @@ export default function SalesPage() {
                     </motion.div>
                 ))}
             </div>
-
-            {/* مقارنة سنوية */}
-            <ChartCard title="مقارنة المبيعات — العام الحالي مقابل السابق" titleFlag='blue' subtitle="مقارنة شهرية مع نسبة التغيير" option={yoyComparisonOption} height="340px" delay={1} />
-
             {/* Drill-Down */}
             <ChartCard
                 title="صافي الأرباح والمبيعات حسب التاريخ"
                 subtitle="انقر على المستوى للتعمق في البيانات"
                 titleFlag="green"
                 headerExtra={
-                    <div className="flex items-center gap-1 flex-wrap justify-end">
-                        {([['year', 'سنة'], ['quarter', 'ربع'], ['month', 'شهر']] as const).map(([level, label]) => (
-                            <button key={level} type="button" onClick={() => setDrillLevel(level)}
-                                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
-                                style={{
-                                    background: drillLevel === level ? 'var(--accent-green-dim)' : 'var(--bg-elevated)',
-                                    color: drillLevel === level ? 'var(--accent-green)' : 'var(--text-muted)',
-                                    border: `1px solid ${drillLevel === level ? 'var(--accent-green)' : 'var(--border-subtle)'}`,
-                                }}>
-                                {label}
-                            </button>
-                        ))}
+                    <div className="flex flex-col items-end gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>المؤشر:</span>
+                            {(
+                                [
+                                    ['sales', 'المبيعات'],
+                                    ['profit', 'الأرباح'],
+                                    ['both', 'كلاهما'],
+                                ] as const
+                            ).map(([mode, label]) => (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => setDrillSeriesMode(mode)}
+                                    className="px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors"
+                                    style={{
+                                        background: drillSeriesMode === mode ? 'rgba(14,165,233,0.15)' : 'var(--bg-elevated)',
+                                        color: drillSeriesMode === mode ? PRIMARY_CYAN : 'var(--text-muted)',
+                                        border: `1px solid ${drillSeriesMode === mode ? PRIMARY_CYAN : 'var(--border-subtle)'}`,
+                                    }}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="hidden sm:block h-6 w-px shrink-0" style={{ background: 'var(--border-subtle)' }} aria-hidden />
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>المستوى:</span>
+                            {([['year', 'سنة'], ['quarter', 'ربع'], ['month', 'شهر']] as const).map(([level, label]) => (
+                                <button key={level} type="button" onClick={() => setDrillLevel(level)}
+                                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                                    style={{
+                                        background: drillLevel === level ? 'var(--accent-green-dim)' : 'var(--bg-elevated)',
+                                        color: drillLevel === level ? 'var(--accent-green)' : 'var(--text-muted)',
+                                        border: `1px solid ${drillLevel === level ? 'var(--accent-green)' : 'var(--border-subtle)'}`,
+                                    }}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 }
                 option={drillDownOption}
@@ -259,12 +300,9 @@ export default function SalesPage() {
 
             {/* مبيعات مقابل أرباح + شلال */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                <ChartCard title="صافي الأرباح والمبيعات" subtitle='مقارنة حسب التصنيف' titleFlag='green' option={salesVsProfitOption} height="340px" delay={2} />
+                <ChartCard title="صافي الأرباح والمبيعات حسب التصنيف" subtitle='مقارنة حسب التصنيف' titleFlag='green' option={salesVsProfitOption} height="340px" delay={2} />
                 <ChartCard title="شلال الإيرادات" titleFlag='blue' subtitle="من إجمالي المبيعات إلى صافي الربح" option={waterfallOption} height="340px" delay={3} />
             </div>
-
-            {/* تحليل المبيعات حسب الخصم */}
-            <ChartCard title="تحليل المبيعات حسب نسبة الخصم" titleFlag="red" titleFlagNumber={1} subtitle="تأثير الخصومات على المبيعات والأرباح" option={salesByDiscountOption} height="300px" delay={4} />
 
             {/* ── Decomposition Tree Drill-Down ── */}
             <TreeDrillDown />

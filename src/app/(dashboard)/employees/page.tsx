@@ -1,12 +1,13 @@
 'use client';
 
 import '@/lib/echarts/register-bar-line-pie';
-import '@/lib/echarts/register-scatter';
 import '@/lib/echarts/register-gauge';
 import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, DollarSign, ShoppingCart, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { ChartTitleFlagBadge } from '@/components/ui/ChartTitleFlagBadge';
+import MetricsBubblePlot, { type MetricsBubblePoint } from '@/components/ui/MetricsBubblePlot';
 
 const ChartCard = dynamic(() => import('@/components/ui/ChartCard'), {
     ssr: false,
@@ -15,7 +16,7 @@ const ChartCard = dynamic(() => import('@/components/ui/ChartCard'), {
 import { PRIMARY_GREEN, PRIMARY_CYAN, PRIMARY_BLUE, PRIMARY_AMBER, PRIMARY_RED, PRIMARY_PURPLE, PRIMARY_SLATE } from '@/lib/colors';
 
 // ── بيانات الكاشيرات ──
-const cashiers = [
+const cashiersBase = [
     { name: 'محمد سالم المساعيد', short: 'المساعيد', transactions: 47442, sales: 118613, atv: 17.35, voidRate: 0.08, score: 66.25, trend: [60, 72, 68, 85, 80, 95, 88, 102, 98, 110, 112, 119] },
     { name: 'محمد العطامات', short: 'العطامات', transactions: 16954, sales: 42605, atv: 3.80, voidRate: 0.01, score: 65.60, trend: [22, 28, 25, 34, 31, 38, 35, 40, 38, 42, 41, 43] },
     { name: 'حسين الشرفات', short: 'الشرفات', transactions: 26255, sales: 67033, atv: 16.83, voidRate: 0.05, score: 63.44, trend: [28, 36, 33, 44, 40, 52, 48, 58, 54, 62, 64, 67] },
@@ -25,7 +26,29 @@ const cashiers = [
     { name: 'حسن الشبيب', short: 'الشبيب', transactions: 11570, sales: 29199, atv: 12.22, voidRate: 0.00, score: 62.94, trend: [10, 14, 12, 18, 16, 22, 20, 26, 24, 28, 22, 29] },
     { name: 'أنور غازي', short: 'أنور غازي', transactions: 13190, sales: 34315, atv: 16.49, voidRate: 0.05, score: 51.62, trend: [16, 21, 19, 27, 24, 31, 28, 34, 31, 34, 33, 34] },
     { name: 'حلود نواش', short: 'حلود نواش', transactions: 14290, sales: 37125, atv: 15.44, voidRate: 0.08, score: 42.52, trend: [18, 23, 20, 28, 25, 32, 29, 35, 32, 36, 36, 37] },
-];
+] as const;
+
+const cashiers = cashiersBase.map((c) => ({
+    ...c,
+    /** تقدير تجميعي من معدل الإلغاء والمعاملات (عرض توضيحي) */
+    voidedItemsCount: Math.max(0, Math.round(c.transactions * (c.voidRate / 100) * 22)),
+    /** قيمة تقديرية للمواد الملغاة من المبيعات ومعدل الإلغاء */
+    voidedValue: Math.max(0, Math.round(c.sales * (c.voidRate / 100) * 3.2)),
+}));
+
+/** فقاعات: أفقي = معدل الإلغاء %، عمودي = قيمة المواد الملغاة، الحجم ∝ عدد المواد الملغات */
+const voidVsValueBubblePoints: MetricsBubblePoint[] = cashiers.map((c) => ({
+    key: c.name,
+    label: c.name,
+    depth: 0,
+    xValue: c.voidRate,
+    yValue: c.voidedValue,
+    hasChildren: false,
+    vol: c.sales,
+    price: c.score,
+    basket: c.voidedItemsCount,
+    atv: c.atv,
+}));
 
 const totalTrans = cashiers.reduce((a, c) => a + c.transactions, 0);
 const totalSales = cashiers.reduce((a, c) => a + c.sales, 0);
@@ -42,6 +65,15 @@ function scoreColor(s: number) {
     if (s >= 55) return PRIMARY_AMBER;
     if (s >= 45) return '#f97316';
     return PRIMARY_RED;
+}
+
+/** Rank gradient: top row (index 0) = green, bottom = red. Returns RGB for rgba() / solid fills (never append hex alpha to rgb()). */
+function rankGradientRgb(index: number, total: number): [number, number, number] {
+    if (total <= 1) return [34, 197, 94];
+    const t = index / (total - 1);
+    const from = [34, 197, 94] as const;
+    const to = [239, 68, 68] as const;
+    return from.map((c, j) => Math.round(c + (to[j] - c) * t)) as [number, number, number];
 }
 
 const maxSales = Math.max(...cashiers.map(c => c.sales));
@@ -91,79 +123,54 @@ export default function EmployeesPage() {
         }],
     };
 
-    // ── ترتيب الكاشيرات (أفقي) ──
+    // ── ترتيب الكاشيرات (أفقي): الأعلى = الأفضل (أخضر) → الأسفل = الأضعف (أحمر) ──
     const ranked = [...cashiers].sort((a, b) => b.score - a.score);
+    const perfBarCount = ranked.length;
+    const perfRowPx = 40;
+    const perfChartHeightPx = Math.max(120, 24 + perfBarCount * perfRowPx);
+
     const perfOption = {
         tooltip: {
             trigger: 'item' as const,
             formatter: (p: { name: string; value: number }) =>
                 `${p.name}: <b style="color:${PRIMARY_GREEN}">${p.value}%</b>`,
         },
-        grid: { left: '26%', right: '14%', top: '3%', bottom: '3%' },
+        grid: { left: '26%', right: '14%', top: '2%', bottom: '2%' },
         xAxis: { type: 'value' as const, max: 80, axisLabel: { formatter: '{value}%', fontSize: 9, color: '#64748b' }, splitLine: { lineStyle: { color: '#1e293b' } } },
-        yAxis: { type: 'category' as const, data: ranked.map(c => c.short), axisLabel: { fontSize: 10, color: '#94a3b8' }, axisLine: { show: false }, axisTick: { show: false } },
+        yAxis: {
+            type: 'category' as const,
+            data: ranked.map(c => c.short),
+            inverse: true,
+            axisLabel: { fontSize: 10, color: '#94a3b8' },
+            axisLine: { show: false },
+            axisTick: { show: false },
+        },
         series: [{
             type: 'bar', barMaxWidth: 20,
-            data: ranked.map(c => ({
-                name: c.short,
-                value: +c.score.toFixed(2),
-                itemStyle: {
-                    color: { type: 'linear' as const, x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: `${scoreColor(c.score)}33` }, { offset: 1, color: scoreColor(c.score) }] },
-                    borderRadius: [0, 6, 6, 0],
-                },
-                label: { show: true, position: 'right' as const, formatter: `${c.score.toFixed(2)}%`, fontSize: 10, fontWeight: 'bold', color: scoreColor(c.score) },
-            })),
+            data: ranked.map((c, i) => {
+                const [r, g, b] = rankGradientRgb(i, perfBarCount);
+                const solid = `rgb(${r},${g},${b})`;
+                return {
+                    name: c.short,
+                    value: +c.score.toFixed(2),
+                    itemStyle: {
+                        color: {
+                            type: 'linear' as const,
+                            x: 0,
+                            y: 0,
+                            x2: 1,
+                            y2: 0,
+                            colorStops: [
+                                { offset: 0, color: `rgba(${r},${g},${b},0.35)` },
+                                { offset: 1, color: `rgba(${r},${g},${b},1)` },
+                            ],
+                        },
+                        borderRadius: [0, 6, 6, 0],
+                    },
+                    label: { show: true, position: 'right' as const, formatter: `${c.score.toFixed(2)}%`, fontSize: 10, fontWeight: 'bold', color: solid },
+                };
+            }),
         }],
-    };
-
-    // ── Scatter: Void Rate vs ATV ──
-    const scatterOption = {
-        tooltip: {
-            trigger: 'item' as const,
-            backgroundColor: '#1a2035',
-            borderColor: '#1e293b',
-            textStyle: { color: '#e2e8f0', fontSize: 11 },
-            formatter: (p: { data: [number, number, number, string] }) =>
-                `<b style="color:${PRIMARY_GREEN}">${p.data[3]}</b><br/>معدل الإلغاء: ${p.data[0]}%<br/>ATV: ${p.data[1].toFixed(2)}<br/>المعاملات: ${fmtN(p.data[2])}`,
-        },
-        xAxis: {
-            name: 'معدل الإلغاء %',
-            type: 'value' as const,
-            nameLocation: 'middle' as const,
-            nameGap: 32,
-            nameTextStyle: { color: PRIMARY_GREEN, fontSize: 9 },
-            axisLabel: { formatter: '{value}%', fontSize: 9, color: PRIMARY_GREEN },
-            splitLine: { lineStyle: { color: PRIMARY_SLATE } },
-        },
-        yAxis: {
-            name: 'متوسط ATV',
-            type: 'value' as const,
-            nameLocation: 'middle' as const,
-            nameGap: 40,
-            nameTextStyle: { color: PRIMARY_GREEN, fontSize: 9 },
-            axisLabel: { fontSize: 9, color: PRIMARY_GREEN },
-            splitLine: { lineStyle: { color: PRIMARY_SLATE } },
-        },
-        series: [{
-            type: 'scatter',
-            symbolSize: (d: number[]) => Math.max(20, Math.sqrt(d[2] / 25)),
-            data: cashiers.map(c => [c.voidRate, c.atv, c.transactions, c.short]),
-            itemStyle: {
-                color: (p: { data: number[] }) => scoreColor(cashiers.find(c => c.transactions === p.data[2])?.score ?? 50),
-                opacity: 0.85, borderColor: PRIMARY_SLATE, borderWidth: 1,
-            },
-            label: { show: false },
-            emphasis: {
-                label: {
-                    show: true,
-                    formatter: (p: { data: (number | string)[] }) => String(p.data[3]).split(' ')[0],
-                    fontSize: 9,
-                    color: PRIMARY_GREEN,
-                    position: 'top' as const,
-                },
-            },
-        }],
-        grid: { bottom: '18%', top: '14%', left: '16%', right: '6%' },
     };
 
     // ── اتجاه المبيعات ──
@@ -221,7 +228,7 @@ export default function EmployeesPage() {
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="flex items-center gap-3 mb-1">
                     <Users size={22} style={{ color: 'var(--text-primary)' }} />
-                    <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Cashier Insights Dashboard</h1>
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>الموظفين</h1>
                     <div className="flex items-center gap-1.5 mr-2">
                         <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: PRIMARY_GREEN }} />
                         <span className="text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>بيانات مباشرة</span>
@@ -292,10 +299,48 @@ export default function EmployeesPage() {
                 </div>
             </div>
 
-            {/* ── Row 3: Scatter + Perf Bars ── */}
+            {/* ── Row 3: نسبة الإلغاء / قيمة المواد الملغاة (نصف العرض) + ترتيب الأداء ── */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                <ChartCard title="نسبة الإلغاء مقابل متوسط قيمة المعاملة" subtitle="Void Rate vs ATV — حجم الفقاعة = عدد المعاملات" option={scatterOption} height="300px" delay={1} />
-                <ChartCard title="ترتيب الكاشيرات حسب درجة الأداء" subtitle="Overall Performance Score Ranking" option={perfOption} height="300px" delay={2} />
+                <div className="glass-panel p-0 overflow-hidden min-w-0">
+                    <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <div className="flex items-center gap-2">
+                            <ChartTitleFlagBadge flag="green" size="sm" />
+                            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                نسبة الإلغاء مقابل متوسط قيمة المعاملة
+                            </h3>
+                        </div>
+                        <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                            أفقي: معدل الإلغاء % — عمودي: قيمة المواد الملغاة — انقر على الدائرة لاسم الكاشير والتفاصيل
+                        </p>
+                    </div>
+                    <MetricsBubblePlot
+                        points={voidVsValueBubblePoints}
+                        xLabel="معدل الإلغاء %"
+                        yLabel="قيمة المواد الملغاة"
+                        variant="green"
+                        plotHeight={320}
+                        showDepthLegend={false}
+                        formatXTick={(v) => `${v.toFixed(2)}%`}
+                        entitySubtitle={() => 'كاشير'}
+                        detailLabels={{
+                            vol: 'إجمالي المبيعات',
+                            price: 'درجة الأداء',
+                            basket: 'عدد المواد الملغات',
+                            atv: 'متوسط قيمة المعاملة',
+                        }}
+                        formatPrice={(n) => `${n.toFixed(2)}%`}
+                    />
+                </div>
+                <div className="min-w-0 max-h-[min(420px,55vh)] overflow-y-auto overflow-x-hidden rounded-xl">
+                    <ChartCard
+                        title="ترتيب الكاشيرات حسب درجة الأداء"
+                        subtitle="Overall Performance Score Ranking — الأعلى أداءً (أخضر) إلى الأسفل (أحمر)"
+                        option={perfOption}
+                        height={`${perfChartHeightPx}px`}
+                        delay={2}
+                        className="min-w-0"
+                    />
+                </div>
             </div>
 
             {/* ── Table ── */}
