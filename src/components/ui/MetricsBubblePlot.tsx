@@ -132,7 +132,6 @@ export default function MetricsBubblePlot({
     const uid = useId().replace(/:/g, '');
     const gridId = `mbp-grid-${uid}`;
     const [selected, setSelected] = useState<MetricsBubblePoint | null>(null);
-    const [hovered, setHovered] = useState<string | null>(null);
 
     const { positioned, xAxisMeta, yAxisMeta, yScale, xScale } = useMemo(() => {
         if (points.length === 0) {
@@ -172,8 +171,8 @@ export default function MetricsBubblePlot({
         return { min: Math.min(...bs), max: Math.max(...bs) };
     }, [points, bubbleSizing]);
 
-    const bubbleRadius = (p: MetricsBubblePoint, isSel: boolean, isHov: boolean) => {
-        const extra = (isSel ? 4 : 0) + (isHov ? 2 : 0);
+    const bubbleRadius = (p: MetricsBubblePoint, isSel: boolean) => {
+        const extra = isSel ? 4 : 0;
         if (bubbleSizing !== 'volume') {
             return baseSize(p.depth) + extra;
         }
@@ -309,9 +308,8 @@ export default function MetricsBubblePlot({
 
                     {positioned.map((p) => {
                         const isSel = selected?.key === p.key;
-                        const isHov = hovered === p.key;
                         const color = depthColor(p.depth, variant);
-                        const sz = bubbleRadius(p, isSel, isHov);
+                        const sz = bubbleRadius(p, isSel);
 
                         return (
                             <div
@@ -322,13 +320,11 @@ export default function MetricsBubblePlot({
                                     top: `${p.topPct}%`,
                                     transform: 'translate(-50%, -50%)',
                                     cursor: p.hasChildren ? 'pointer' : 'pointer',
-                                    zIndex: isSel ? 30 : isHov ? 20 : 15,
+                                    zIndex: isSel ? 30 : 15,
                                 }}
                                 onClick={() => handlePointClick(p)}
-                                onMouseEnter={() => setHovered(p.key)}
-                                onMouseLeave={() => setHovered(null)}
                             >
-                                {(isSel || isHov) && (
+                                {isSel && (
                                     <motion.div
                                         animate={{ scale: [1, 1.8, 1], opacity: [0.45, 0, 0.45] }}
                                         transition={{ repeat: Infinity, duration: 1.5 }}

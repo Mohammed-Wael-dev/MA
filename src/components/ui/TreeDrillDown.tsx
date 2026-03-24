@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import { ChartTitleFlagBadge } from '@/components/ui/ChartTitleFlagBadge';
 
 // ── بنية البيانات ──
@@ -115,24 +115,42 @@ const treeData: TreeNode = {
 
 type Level = { label: string; node: TreeNode };
 
+/** سهم يشير إلى العقدة المحددة (على يسارها في اتجاه LTR = «قبل» العنصر). */
+function LeadArrowIcon() {
+    return (
+        <svg width="22" height="10" viewBox="0 0 28 10" style={{ display: 'block', flexShrink: 0 }} aria-hidden>
+            <line x1="0" y1="5" x2="16" y2="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 16 1.5 L 26.5 5 L 16 8.5 Z" fill="currentColor" />
+        </svg>
+    );
+}
+
 // ── مكوّن عنصر الشجرة ──
-function TreeItem({ node, max, selected, onClick }: {
+function TreeItem({
+    node,
+    max,
+    selected,
+    onClick,
+    showLeadArrow,
+}: {
     node: TreeNode;
     max: number;
     selected: boolean;
     onClick: () => void;
+    /** سهم قبل العنصر المحدد فقط (وليس بعد العمود). */
+    showLeadArrow: boolean;
 }) {
     const pct = Math.round((node.value / max) * 100);
-    return (
+    const btn = (
         <button
+            type="button"
             onClick={onClick}
-            className="w-full text-right transition-all rounded-md p-2 mb-1"
+            className={`text-right transition-all rounded-md p-2 ${showLeadArrow ? 'flex-1 min-w-0' : 'w-full'} mb-0`}
             style={{
                 background: selected ? 'rgba(37,99,235,0.12)' : 'transparent',
                 border: `1px solid ${selected ? '#2563eb' : 'transparent'}`,
             }}
         >
-            {/* شريط التقدم الأزرق */}
             <div className="mb-1.5 h-[5px] rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
                 <motion.div
                     initial={{ width: 0 }}
@@ -149,6 +167,22 @@ function TreeItem({ node, max, selected, onClick }: {
                 {node.value.toLocaleString('en-US')}
             </p>
         </button>
+    );
+
+    if (!showLeadArrow) {
+        return <div className="mb-1 w-full">{btn}</div>;
+    }
+
+    return (
+        <div className="flex items-center gap-1 w-full mb-1" dir="ltr">
+            <span
+                className="shrink-0 flex items-center self-center pointer-events-none pl-0.5"
+                style={{ color: 'rgba(37,99,235,0.85)' }}
+            >
+                <LeadArrowIcon />
+            </span>
+            {btn}
+        </div>
     );
 }
 
@@ -195,6 +229,7 @@ export default function TreeDrillDown() {
     };
 
     const scrollRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollLeft = 0; // RTL: scroll to start
@@ -245,11 +280,12 @@ export default function TreeDrillDown() {
                 )}
             </AnimatePresence>
 
-            {/* جسم الشجرة */}
-            <div ref={scrollRef} className="flex overflow-x-auto p-5 gap-0 items-start" dir="ltr">
+            {/* جسم الشجرة: تمرير أفقي + صف الأعمدة */}
+            <div ref={scrollRef} className="overflow-x-auto p-5">
+                <div className="flex w-max min-w-full gap-2 items-stretch" dir="ltr">
 
                 {/* عمود الجذر: Net Sales */}
-                <div className="flex-shrink-0 flex flex-col items-start justify-center ml-2" style={{ minWidth: '110px' }}>
+                <div className="shrink-0 flex flex-col items-start justify-center self-stretch ml-2" style={{ minWidth: '110px' }}>
                     <div className="p-2 rounded-md" style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.25)' }}>
                         <p className="text-[10px] font-semibold" style={{ color: 'var(--accent-blue)' }}>Net Sales</p>
                         <p className="text-sm font-bold" style={{ color: 'var(--accent-blue)' }} dir="ltr">
@@ -258,10 +294,7 @@ export default function TreeDrillDown() {
                     </div>
                 </div>
 
-                {/* خط توصيل من الجذر */}
-                <ConnectorLine />
-
-                {/* أعمدة ديناميكية */}
+                {/* أعمدة ديناميكية — السهم يظهر قبل الصف المحدد داخل العمود */}
                 {columns.map((col, colIdx) => {
                     const selectedNode = path[colIdx]?.node;
                     const maxVal = getMax(col.nodes);
@@ -271,7 +304,7 @@ export default function TreeDrillDown() {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: colIdx * 0.05 }}
-                                className="flex-shrink-0"
+                                className="shrink-0 self-stretch flex flex-col"
                                 style={{ minWidth: '160px', maxWidth: '160px' }}
                             >
                                 {/* رأس العمود */}
@@ -290,43 +323,29 @@ export default function TreeDrillDown() {
 
                                 {/* العناصر */}
                                 <div
-                                    className="space-y-0 overflow-y-auto"
+                                    className="space-y-0 overflow-y-auto flex-1 min-h-0"
                                     style={{ maxHeight: '650px', paddingRight: '2px' }}
                                 >
-                                    {col.nodes.map((node) => (
-                                        <TreeItem
-                                            key={node.id}
-                                            node={node}
-                                            max={maxVal}
-                                            selected={selectedNode?.id === node.id}
-                                            onClick={() => handleSelect(colIdx, node)}
-                                        />
-                                    ))}
+                                    {col.nodes.map((node) => {
+                                        const isSel = selectedNode?.id === node.id;
+                                        return (
+                                            <TreeItem
+                                                key={node.id}
+                                                node={node}
+                                                max={maxVal}
+                                                selected={isSel}
+                                                showLeadArrow={isSel}
+                                                onClick={() => handleSelect(colIdx, node)}
+                                            />
+                                        );
+                                    })}
                                 </div>
                             </motion.div>
-
-                            {/* خطوط التوصيل بين الأعمدة */}
-                            {colIdx < columns.length - 1 && (
-                                <ConnectorLine selected={!!selectedNode} />
-                            )}
                         </React.Fragment>
                     );
                 })}
+                </div>
             </div>
-        </div>
-    );
-}
-
-// ── خط التوصيل ──
-function ConnectorLine({ selected = true }: { selected?: boolean }) {
-    return (
-        <div className="flex-shrink-0 flex items-center justify-center" style={{ width: '28px', paddingTop: '40px' }}>
-            <div style={{
-                width: '24px',
-                height: '2px',
-                background: selected ? 'rgba(37,99,235,0.6)' : 'var(--border-subtle)',
-                transition: 'background 0.3s',
-            }} />
         </div>
     );
 }

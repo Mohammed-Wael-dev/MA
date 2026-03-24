@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Shield, Lock, User, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Lock, User, ArrowLeft, AlertCircle } from 'lucide-react';
+import logo from '@/assets/logo.jpeg';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useRouter } from 'next/navigation';
@@ -70,12 +72,20 @@ export default function LoginPage() {
                     {/* الشعار */}
                     <div className="flex flex-col items-center mb-8">
                         <motion.div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-                            style={{ background: 'linear-gradient(135deg, #047857, #0891b2)', boxShadow: '0 0 30px rgba(4,120,87,0.2)' }}
-                            animate={{ boxShadow: ['0 0 30px rgba(4,120,87,0.2)', '0 0 50px rgba(4,120,87,0.3)', '0 0 30px rgba(4,120,87,0.2)'] }}
-                            transition={{ duration: 3, repeat: Infinity }}
+                            className="relative mb-4 flex items-center justify-center rounded-full overflow-hidden shrink-0"
+                            style={{ width: 96, height: 96, boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(4,120,87,0.15)' }}
+                            initial={{ opacity: 0, scale: 0.92 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.5, delay: 0.15 }}
                         >
-                            <Shield size={32} color="#ffffff" strokeWidth={2} />
+                            <Image
+                                src={logo}
+                                alt="شعار المؤسسة الاستهلاكية العسكرية"
+                                width={96}
+                                height={96}
+                                className="object-contain bg-white"
+                                priority
+                            />
                         </motion.div>
                         <h1 className="text-lg font-bold tracking-wide text-center" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
                             المؤسسة الاستهلاكية العسكرية

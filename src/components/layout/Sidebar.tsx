@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,10 +25,10 @@ import {
     FileBarChart,
     ChevronRight,
     ChevronLeft,
-    Shield,
     Sun,
     Moon,
 } from 'lucide-react';
+import logo from '@/assets/logo.jpeg';
 
 interface NavItem {
     id: string;
@@ -87,10 +88,18 @@ export default function Sidebar() {
             {/* شعار */}
             <div className="flex items-center gap-3 px-4 h-16 border-b" style={{ borderColor: 'var(--sidebar-border)' }}>
                 <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'var(--sidebar-logo-gradient)' }}
+                    className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white"
+                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}
+                    title="المؤسسة الاستهلاكية العسكرية"
                 >
-                    <Shield size={20} color="#ffffff" strokeWidth={2.5} />
+                    <Image
+                        src={logo}
+                        alt="شعار المؤسسة الاستهلاكية العسكرية"
+                        width={40}
+                        height={40}
+                        className="object-contain"
+                        sizes="40px"
+                    />
                 </div>
                 <AnimatePresence>
                     {!isCollapsed && (

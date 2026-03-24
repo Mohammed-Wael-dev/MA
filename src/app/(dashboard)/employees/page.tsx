@@ -264,7 +264,7 @@ export default function EmployeesPage() {
             {/* ── Row 2: اتجاه المبيعات + Gauge + أفضل 3 ── */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                 <div className="xl:col-span-2">
-                    <ChartCard title="اتجاه مبيعات الكاشيرات" subtitle="Sales trend per cashier — 12 months" option={trendOption} height="340px" delay={1} />
+                    <ChartCard title="اتجاه مبيعات الكاشيرات" titleFlag='green' subtitle="Sales trend per cashier — 12 months" option={trendOption} height="340px" delay={1} />
                 </div>
 
                 <div className="glass-panel overflow-hidden flex flex-col">
@@ -336,6 +336,7 @@ export default function EmployeesPage() {
                         title="ترتيب الكاشيرات حسب درجة الأداء"
                         subtitle="Overall Performance Score Ranking — الأعلى أداءً (أخضر) إلى الأسفل (أحمر)"
                         option={perfOption}
+                        titleFlag='green'
                         height={`${perfChartHeightPx}px`}
                         delay={2}
                         className="min-w-0"
