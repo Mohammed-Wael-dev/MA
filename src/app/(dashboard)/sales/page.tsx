@@ -138,7 +138,23 @@ export default function SalesPage() {
     const drillXAxis = drillMonthHierarchy
         ? buildThreeYearMonthQuarterYearXAxes({ monthNames: months, years: DRILL_YEARS })
         : { type: 'category' as const, data: drillData.labels };
-    const drillGridBottom = drillMonthHierarchy ? '38%' : drillLevel === 'quarter' ? '18%' : '15%';
+    /** Month view: fixed grid + containLabel false — avoids double bottom padding vs ChartCard base (containLabel + large %). */
+    const drillGrid =
+        drillMonthHierarchy
+            ? {
+                  left: '6%' as const,
+                  right: '7%' as const,
+                  top: 28,
+                  bottom: 94,
+                  containLabel: false,
+              }
+            : {
+                  left: '5%' as const,
+                  right: '6%' as const,
+                  top: '14%',
+                  bottom: drillLevel === 'quarter' ? '20%' : '18%',
+                  containLabel: true,
+              };
 
     const salesBarSeries = {
         name: 'المبيعات',
@@ -163,7 +179,7 @@ export default function SalesPage() {
         ...(drillMonthHierarchy ? { xAxisIndex: 0 } : {}),
     };
 
-    const drillLegendBottom = drillMonthHierarchy ? 8 : 0;
+    const drillLegendBottom = drillMonthHierarchy ? 2 : 0;
 
     const drillDownOption =
         drillSeriesMode === 'both'
@@ -175,9 +191,10 @@ export default function SalesPage() {
                     data: ['المبيعات', 'الأرباح'],
                     bottom: drillLegendBottom,
                     left: 'center',
+                    itemGap: 12,
                     textStyle: { color: '#94a3b8', fontSize: 11 },
                 },
-                grid: { bottom: drillGridBottom },
+                grid: drillGrid,
             }
             : drillSeriesMode === 'sales'
                 ? {
@@ -188,9 +205,10 @@ export default function SalesPage() {
                         data: ['المبيعات'],
                         bottom: drillLegendBottom,
                         left: 'center',
+                        itemGap: 12,
                         textStyle: { color: '#94a3b8', fontSize: 11 },
                     },
-                    grid: { bottom: drillGridBottom },
+                    grid: drillGrid,
                 }
                 : {
                     xAxis: drillXAxis,
@@ -200,9 +218,10 @@ export default function SalesPage() {
                         data: ['الأرباح'],
                         bottom: drillLegendBottom,
                         left: 'center',
+                        itemGap: 12,
                         textStyle: { color: '#94a3b8', fontSize: 11 },
                     },
-                    grid: { bottom: drillGridBottom },
+                    grid: drillGrid,
                 };
 
     // ── مبيعات مقابل أرباح حسب المنتج ──
@@ -291,9 +310,9 @@ export default function SalesPage() {
                 subtitle="انقر على المستوى للتعمق في البيانات"
                 titleFlag="green"
                 headerExtra={
-                    <div className="flex flex-col items-end gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-                        <div className="flex items-center gap-1 flex-wrap justify-end">
-                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>المؤشر:</span>
+                    <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
+                        <div className="flex items-center gap-0.5 flex-wrap justify-end">
+                            <span className="text-[9px] shrink-0" style={{ color: 'var(--text-muted)' }}>المؤشر:</span>
                             {(
                                 [
                                     ['sales', 'المبيعات'],
@@ -305,7 +324,7 @@ export default function SalesPage() {
                                     key={mode}
                                     type="button"
                                     onClick={() => setDrillSeriesMode(mode)}
-                                    className="px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors"
+                                    className="px-2 py-1 rounded-md text-[10px] font-medium transition-colors"
                                     style={{
                                         background: drillSeriesMode === mode ? 'rgba(14,165,233,0.15)' : 'var(--bg-elevated)',
                                         color: drillSeriesMode === mode ? palette.primaryCyan : 'var(--text-muted)',
@@ -316,12 +335,12 @@ export default function SalesPage() {
                                 </button>
                             ))}
                         </div>
-                        <div className="hidden sm:block h-6 w-px shrink-0" style={{ background: 'var(--border-subtle)' }} aria-hidden />
-                        <div className="flex items-center gap-1 flex-wrap justify-end">
-                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>المستوى:</span>
+                        <div className="hidden sm:block h-5 w-px shrink-0" style={{ background: 'var(--border-subtle)' }} aria-hidden />
+                        <div className="flex items-center gap-0.5 flex-wrap justify-end">
+                            <span className="text-[9px] shrink-0" style={{ color: 'var(--text-muted)' }}>المستوى:</span>
                             {([['year', 'سنة'], ['quarter', 'ربع'], ['month', 'شهر']] as const).map(([level, label]) => (
                                 <button key={level} type="button" onClick={() => setDrillLevel(level)}
-                                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                                    className="px-2 py-1 rounded-md text-[10px] font-medium transition-colors"
                                     style={{
                                         background: drillLevel === level ? 'var(--accent-green-dim)' : 'var(--bg-elevated)',
                                         color: drillLevel === level ? 'var(--accent-green)' : 'var(--text-muted)',
@@ -334,7 +353,7 @@ export default function SalesPage() {
                     </div>
                 }
                 option={drillDownOption}
-                height="280px"
+                height="300px"
                 panelOverflow={drillMonthHierarchy ? 'visible' : 'hidden'}
             />
 

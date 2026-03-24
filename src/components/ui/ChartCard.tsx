@@ -69,6 +69,7 @@ function ChartCard({
     const [chartReady, setChartReady] = useState(false);
     const [inViewport, setInViewport] = useState(!lazyViewport);
     const viewportRef = useRef<HTMLDivElement>(null);
+    const fullscreenChartRef = useRef<React.ElementRef<typeof ReactEChartsCore>>(null);
     const mountedRef = useRef(true);
 
     useEffect(() => {
@@ -113,6 +114,10 @@ function ChartCard({
             setIsFullscreen(true);
         }
     }, [onExpand]);
+
+    const resizeFullscreenChart = useCallback(() => {
+        fullscreenChartRef.current?.getEchartsInstance?.()?.resize();
+    }, []);
 
     const baseTheme = useMemo(() => ({
         backgroundColor: 'transparent',
@@ -273,15 +278,119 @@ function ChartCard({
             merged.visualMap = { ...vm, textStyle: { color: '#475569' } };
         }
 
+        const seriesList: Record<string, unknown>[] = !merged.series
+            ? []
+            : Array.isArray(merged.series)
+                ? (merged.series as Record<string, unknown>[])
+                : [merged.series as Record<string, unknown>];
+        const hasBarSeries = seriesList.some((s) => s.type === 'bar');
+
+        if (hasBarSeries) {
+            const spineColor = isDark ? '#64748b' : '#94a3b8';
+            const splitLineColor = isDark ? 'rgba(148,163,184,0.22)' : 'rgba(100,116,139,0.3)';
+
+            const enhanceBarCartesianAxis = (ax: Record<string, unknown>): Record<string, unknown> => {
+                const t = ax.type as string | undefined;
+                if (!ax || (t !== 'category' && t !== 'value' && t !== 'log')) return ax;
+                const al = ax.axisLine as Record<string, unknown> | undefined;
+                if (al && al.show === false) return ax;
+
+                const tickIn = ax.axisTick as Record<string, unknown> | undefined;
+                const forceHideTicks = tickIn && tickIn.show === false;
+
+                const existingLine = (ax.axisLine || {}) as Record<string, unknown>;
+                const existingLS = (existingLine.lineStyle || {}) as Record<string, unknown>;
+
+                const next: Record<string, unknown> = {
+                    ...ax,
+                    axisLine: {
+                        show: true,
+                        ...existingLine,
+                        lineStyle: { width: 2, color: spineColor, ...existingLS },
+                    },
+                };
+
+                if (forceHideTicks) {
+                    next.axisTick = { show: false, ...tickIn };
+                } else {
+                    const tickLS = (tickIn?.lineStyle || {}) as Record<string, unknown>;
+                    next.axisTick = {
+                        show: true,
+                        length: 5,
+                        ...tickIn,
+                        lineStyle: { color: spineColor, width: 1, ...tickLS },
+                    };
+                }
+                return next;
+            };
+
+            const addValueSplitLines = (ax: Record<string, unknown>): Record<string, unknown> => {
+                if (ax.type !== 'value') return ax;
+                const al = ax.axisLine as Record<string, unknown> | undefined;
+                if (al && al.show === false) return ax;
+                const prev = (ax.splitLine || {}) as Record<string, unknown>;
+                if (prev.show === false) return ax;
+                const prevLs = (prev.lineStyle || {}) as Record<string, unknown>;
+                return {
+                    ...ax,
+                    splitLine: {
+                        ...prev,
+                        show: true,
+                        lineStyle: {
+                            type: 'dashed',
+                            color: splitLineColor,
+                            width: 1,
+                            ...prevLs,
+                        },
+                    },
+                };
+            };
+
+            const pipeAxis = (ax: Record<string, unknown>) =>
+                addValueSplitLines(enhanceBarCartesianAxis(ax));
+
+            if (Array.isArray(merged.xAxis)) {
+                merged.xAxis = merged.xAxis.map((ax) => pipeAxis(ax as Record<string, unknown>));
+            } else if (merged.xAxis) {
+                merged.xAxis = pipeAxis(merged.xAxis as Record<string, unknown>);
+            }
+            if (Array.isArray(merged.yAxis)) {
+                merged.yAxis = merged.yAxis.map((ax) => pipeAxis(ax as Record<string, unknown>));
+            } else if (merged.yAxis) {
+                merged.yAxis = pipeAxis(merged.yAxis as Record<string, unknown>);
+            }
+        }
+
         return merged;
     }, [option, baseTheme, isDark]);
 
-    const chartEl = (extraHeight?: string) => {
+    useEffect(() => {
+        if (!isFullscreen) return;
+        const run = () => resizeFullscreenChart();
+        const raf = requestAnimationFrame(run);
+        const t1 = window.setTimeout(run, 80);
+        const t2 = window.setTimeout(run, 400);
+        return () => {
+            cancelAnimationFrame(raf);
+            window.clearTimeout(t1);
+            window.clearTimeout(t2);
+        };
+    }, [isFullscreen, resizeFullscreenChart, mergedOption]);
+
+    useEffect(() => {
+        if (!isFullscreen) return;
+        const onWinResize = () => resizeFullscreenChart();
+        window.addEventListener('resize', onWinResize);
+        return () => window.removeEventListener('resize', onWinResize);
+    }, [isFullscreen, resizeFullscreenChart]);
+
+    const chartEl = (extraHeight?: string, forFullscreen?: boolean) => {
         if (!chartReady) {
             return <div style={{ height: extraHeight || '100%', width: '100%' }} aria-hidden />;
         }
         return (
             <ReactEChartsCore
+                ref={forFullscreen ? fullscreenChartRef : undefined}
                 echarts={echarts}
                 option={mergedOption}
                 style={{ height: extraHeight || '100%', width: '100%' }}
@@ -358,7 +467,7 @@ function ChartCard({
                             background: isDark ? 'rgba(5,9,18,0.85)' : 'rgba(15,23,42,0.5)',
                             backdropFilter: 'blur(6px)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            padding: '24px',
+                            padding: '12px',
                         }}
                         onClick={() => setIsFullscreen(false)}
                     >
@@ -369,10 +478,16 @@ function ChartCard({
                             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                             onClick={(e) => e.stopPropagation()}
                             className={`glass-panel ${panelOverflow === 'visible' ? 'overflow-visible' : 'overflow-hidden'}`}
-                            style={{ width: '92vw', maxWidth: 1200, minHeight: '85vh', maxHeight: '95vh', display: 'flex', flexDirection: 'column' }}
+                            style={{
+                                width: 'min(96vw, 1600px)',
+                                height: 'min(92vh, calc(100dvh - 24px))',
+                                maxHeight: '96vh',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
                         >
                             <div
-                                className={`flex items-center px-6 py-4 border-b gap-3 ${showTitleBlock ? 'justify-between' : 'justify-end'}`}
+                                className={`flex items-center px-6 py-3 border-b gap-3 ${showTitleBlock ? 'justify-between' : 'justify-end'}`}
                                 style={{ borderColor: 'var(--border-subtle)', flexShrink: 0 }}
                             >
                                 {showTitleBlock && (
@@ -398,9 +513,9 @@ function ChartCard({
                                     </button>
                                 </div>
                             </div>
-                            <div style={{ flex: 1, minHeight: 0, padding: '8px 0', position: 'relative' }}>
+                            <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
                                 <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-                                    {chartEl('100%')}
+                                    {chartEl('100%', true)}
                                 </div>
                             </div>
                         </motion.div>
